@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: vexius-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  onlyoffice-document-server:
+    image: onlyoffice/documentserver:latest
+    container_name: vexius-onlyoffice
+    ports:
+      - "8080:80"
+    environment:
+      - JWT_SECRET=vexius_dev_secret_key_change_me_in_prod
+      - JWT_HEADER=Authorization
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_log:/var/log/onlyoffice
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  onlyoffice_data:
+  onlyoffice_log:

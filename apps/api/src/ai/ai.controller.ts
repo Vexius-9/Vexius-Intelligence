@@ -1,0 +1,64 @@
+import { Controller, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
+import type { FastifyRequest, FastifyReply } from 'fastify';
+import { AiService } from './ai.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+@Controller('ai')
+@UseGuards(JwtAuthGuard)
+export class AiController {
+  constructor(private readonly aiService: AiService) {}
+
+  @Post('chat')
+  async chat(
+    @Body() body: { messages: any[]; model?: string; context?: any },
+    @Res() res: FastifyReply
+  ) {
+    // Inject semantic search results if workspaceId is provided
+    let enrichedContext = body.context || {};
+    
+    if (body.context?.workspaceId && body.messages.length > 0) {
+      const lastMessage = body.messages[body.messages.length - 1];
+      if (lastMessage.role === 'user') {
+        const searchResults: any = await this.aiService.semanticSearch(lastMessage.content, body.context.workspaceId);
+        if (searchResults && searchResults.length > 0) {
+          enrichedContext.semanticContext = searchResults.map((r: any) => `Document: ${r.documentName}\nExcerpt: ${r.content}`).join('\n\n');
+        }
+      }
+    }
+
+    // Default to OpenAI GPT-4o if not specified
+    const providerModelId = body.model || 'openai:gpt-4o';
+    
+    // We stream the standard Response object directly to fastify reply
+    const webResponse = await this.aiService.chatStream(
+      body.messages,
+      providerModelId,
+      enrichedContext
+    );
+
+    // Fastify handling for standard Web Response (from Vercel AI SDK)
+    res.raw.setHeader('Content-Type', webResponse.headers.get('Content-Type') || 'text/event-stream');
+    res.raw.setHeader('Cache-Control', 'no-cache');
+    res.raw.setHeader('Connection', 'keep-alive');
+
+    if (webResponse.body) {
+      const reader = webResponse.body.getReader();
+      const push = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.raw.write(value);
+          }
+        } catch (err) {
+          console.error('Error streaming AI response:', err);
+        } finally {
+          res.raw.end();
+        }
+      };
+      push();
+    } else {
+      res.raw.end();
+    }
+  }
+}

@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  name       String?
+  avatar     String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  workspaces Workspace[]
+  members    WorkspaceMember[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String      @id @default(uuid())
+  name      String
+  ownerId   String      @map("owner_id")
+  owner     User        @relation(fields: [ownerId], references: [id])
+  createdAt DateTime    @default(now()) @map("created_at")
+  members   WorkspaceMember[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  workspaceId String    @map("workspace_id")
+  userId      String    @map("user_id")
+  role        String    @default("editor") // owner, admin, editor, viewer
+  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@id([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model Document {
+  id              String   @id @default(uuid())
+  workspaceId     String   @map("workspace_id")
+  ownerId         String   @map("owner_id")
+  name            String
+  type            String   // document, spreadsheet, presentation, pdf
+  mimeType        String   @map("mime_type")
+  storageKey      String   @map("storage_key")
+  size            Int
+  currentVersion  Int      @default(1) @map("current_version")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  versions        DocumentVersion[]
+  permissions     DocumentPermission[]
+  chunks          DocumentChunk[]
+
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id          String   @id @default(uuid())
+  documentId  String   @map("document_id")
+  version     Int
+  storageKey  String   @map("storage_key")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  document    Document @relation(fields: [documentId], references: [id])
+
+  @@map("document_versions")
+}
+
+model DocumentPermission {
+  documentId  String   @map("document_id")
+  userId      String   @map("user_id")
+  permission  String   // view, comment, edit, owner
+
+  document    Document @relation(fields: [documentId], references: [id])
+
+  @@id([documentId, userId])
+  @@map("document_permissions")
+}
+
+model DocumentChunk {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  content    String
+  embedding  Unsupported("vector(1536)")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_chunks")
+}
