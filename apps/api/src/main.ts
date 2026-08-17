@@ -4,6 +4,8 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import fastifyMultipart from '@fastify/multipart';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import helmet from '@fastify/helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -11,6 +13,11 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter()
   );
+
+  // Security Headers
+  await app.register(helmet as any);
+
+  app.enableCors();
   
   await app.register(fastifyMultipart as any);
   

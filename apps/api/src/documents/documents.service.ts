@@ -2,17 +2,22 @@ import { Injectable, Logger, BadRequestException, NotFoundException, InternalSer
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageClient } from '@vexius/storage';
 import { ConfigService } from '@nestjs/config';
+import { AuditService } from '../audit/audit.service';
 import axios from 'axios';
 import * as jwt from 'jsonwebtoken';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
-  private storageClient: StorageClient;
+  private readonly storageClient: StorageClient;
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
+    private prisma: PrismaService,
+    private configService: ConfigService,
+    private auditService: AuditService,
+    @InjectQueue('document-indexing') private documentIndexingQueue: Queue,
   ) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || '';
     const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -84,6 +89,15 @@ export class DocumentsService {
           }
         });
 
+        // Audit Log
+        await this.auditService.logAction(
+          workspaceId,
+          userId,
+          'DOCUMENT_UPLOAD',
+          doc.id,
+          { filename: file.filename, size: file.buffer?.length, mimeType: file.mimetype }
+        );
+
         return doc;
       });
 
@@ -124,6 +138,15 @@ export class DocumentsService {
     try {
       // Create a signed URL valid for 1 hour (3600 seconds)
       const url = await this.storageClient.getSignedUrl('vexius-documents', document.storageKey, 3600);
+      
+      // Audit Log
+      await this.auditService.logAction(
+        document.workspaceId,
+        userId,
+        'DOCUMENT_DOWNLOAD',
+        document.id
+      );
+
       return { url };
     } catch (error) {
       this.logger.error('Failed to generate signed url', error);

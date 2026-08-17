@@ -1,12 +1,16 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class AiService {
+  private readonly logger = new Logger(AiService.name);
+
   constructor(
     private configService: ConfigService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private auditService: AuditService,
   ) {}
 
   /**
@@ -116,8 +120,27 @@ export class AiService {
       model,
       system: this.buildSystemPrompt(context),
       messages,
+      onFinish: async ({ usage }) => {
+        if (context?.workspaceId) {
+          try {
+            await this.prisma.workspace.update({
+              where: { id: context.workspaceId },
+              data: { aiTokensUsed: { increment: usage.totalTokens } }
+            });
+            await this.auditService.logAction(
+              context.workspaceId,
+              context.userId || 'SYSTEM',
+              'AI_CHAT_STREAM',
+              'WORKSPACE',
+              { tokensUsed: usage.totalTokens, model: providerModelId }
+            );
+          } catch (e) {
+            this.logger.error('Failed to update token usage', e);
+          }
+        }
+      }
     });
 
-    return result.toTextStreamResponse();
+    return result.toDataStreamResponse();
   }
 }

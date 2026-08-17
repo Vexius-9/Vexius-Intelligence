@@ -28,8 +28,9 @@ model Workspace {
   name      String
   ownerId   String      @map("owner_id")
   owner     User        @relation(fields: [ownerId], references: [id])
-  createdAt DateTime    @default(now()) @map("created_at")
-  members   WorkspaceMember[]
+  createdAt    DateTime    @default(now()) @map("created_at")
+  aiTokensUsed Int         @default(0) @map("ai_tokens_used")
+  members      WorkspaceMember[]
 
   @@map("workspaces")
 }
@@ -101,4 +102,16 @@ model DocumentChunk {
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("document_chunks")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  action      String
+  resource    String?
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
 }
