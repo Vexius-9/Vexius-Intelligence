@@ -31,9 +31,9 @@ export default function Home() {
             <Link href="#enterprise" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Enterprise</Link>
           </div>
 
-          <button className="btn-secondary" style={{ padding: "8px 16px", fontSize: "0.85rem" }}>
+          <Link href="/login" className="btn-secondary" style={{ padding: "8px 16px", fontSize: "0.85rem", display: "inline-block", textAlign: "center" }}>
             Sign In
-          </button>
+          </Link>
         </div>
       </nav>
 
@@ -114,57 +114,87 @@ export default function Home() {
 
         {/* Features Section */}
         <section id="features" style={{ width: "100%", maxWidth: "1200px", padding: "120px 24px" }}>
-          <div style={{ textAlign: "center", marginBottom: "80px" }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            style={{ textAlign: "center", marginBottom: "80px" }}
+          >
             <h2 style={{ fontSize: "2.5rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "16px" }}>
               Built for complex workflows.
             </h2>
             <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", maxWidth: "500px", margin: "0 auto" }}>
               Everything you need to scale intelligent document processing without the overhead.
             </p>
-          </div>
+          </motion.div>
 
           {/* Bento Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="bento-grid"
-          >
-            <div className="bento-box" style={{ gridColumn: "span 2" }}>
+          <div className="bento-grid">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+              className="bento-box" style={{ gridColumn: "span 2" }}
+            >
               <h3 className="text-bento-title">Native RAG Architecture</h3>
               <p className="text-bento-desc">
                 Instantly query across all your workspace documents. Our infrastructure indexes your data in real-time, enabling semantic search with sub-second latency powered by OpenAI embeddings.
               </p>
-            </div>
+            </motion.div>
             
-            <div className="bento-box">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              className="bento-box"
+            >
               <h3 className="text-bento-title">ONLYOFFICE Core</h3>
               <p className="text-bento-desc">
                 AI actions that format and write directly into your canvas using robust JWT-secured WOPI protocols.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="bento-box">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+              className="bento-box"
+            >
               <h3 className="text-bento-title">Dual-LLM Engine</h3>
               <p className="text-bento-desc">
                 Powered by Grok (T2) and DeepSeek (T1) for complex reasoning. Smart routing optimizes for both cost and speed.
               </p>
-            </div>
+            </motion.div>
             
-            <div className="bento-box" style={{ gridColumn: "span 2" }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+              className="bento-box" style={{ gridColumn: "span 2" }}
+            >
               <h3 className="text-bento-title">Workspace Isolation</h3>
               <p className="text-bento-desc">
                 Every document belongs to a strictly isolated workspace, ensuring complete separation of concerns and data privacy.
               </p>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </section>
 
         {/* Security Section */}
         <section id="security" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "64px", alignItems: "center" }}>
-            <div style={{ flex: "1 1 400px" }}>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              style={{ flex: "1 1 400px" }}
+            >
               <h2 style={{ fontSize: "2.5rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "24px" }}>
                 Enterprise-grade security by default.
               </h2>
@@ -184,8 +214,14 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div style={{ flex: "1 1 400px" }}>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              style={{ flex: "1 1 400px" }}
+            >
               {/* Mock Code Block UI */}
               <div className="bento-box" style={{ padding: "0", background: "#000" }}>
                 <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--border-color)", display: "flex", gap: "8px" }}>
@@ -203,23 +239,30 @@ export default function Home() {
                   ));
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
         {/* Enterprise CTA */}
         <section id="enterprise" style={{ width: "100%", maxWidth: "800px", padding: "160px 24px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "3rem", fontWeight: 600, letterSpacing: "-0.04em", marginBottom: "24px" }}>
-            Ready to scale?
-          </h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "48px" }}>
-            Deploy Vexius Engine on your own infrastructure or let us manage it for you. Perfect for high-compliance environments.
-          </p>
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-            <button className="btn-primary" style={{ padding: "16px 32px" }}>
-              Contact Sales
-            </button>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <h2 style={{ fontSize: "3rem", fontWeight: 600, letterSpacing: "-0.04em", marginBottom: "24px" }}>
+              Ready to scale?
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "48px" }}>
+              Deploy Vexius Engine on your own infrastructure or let us manage it for you. Perfect for high-compliance environments.
+            </p>
+            <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
+              <button className="btn-primary" style={{ padding: "16px 32px" }}>
+                Contact Sales
+              </button>
+            </div>
+          </motion.div>
         </section>
 
         {/* Footer */}
