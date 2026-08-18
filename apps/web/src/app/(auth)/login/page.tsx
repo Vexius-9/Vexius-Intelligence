@@ -22,9 +22,9 @@ export default function LoginPage() {
         // Simulasi network request delay
         await new Promise((resolve) => setTimeout(resolve, 1500));
         
-        // MOCK LOGIC: Kita pura-pura memverifikasi apakah wallet ini hold >= 10.000.000 (1%) Vexius.
-        // Untuk sekarang, kita asumsikan SEMUA wallet sukses (dummy success).
-        // Jika ingin menguji gagal, bisa ubah isSuccess menjadi false.
+        // MOCK LOGIC: Verify if the wallet holds >= 10,000,000 (1%) Vexius tokens.
+        // Currently assuming ALL wallets are successful (dummy success).
+        // To test failure, set isSuccess to false.
         const isSuccess = true; 
 
         if (isSuccess) {
