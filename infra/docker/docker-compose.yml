@@ -17,7 +17,7 @@ services:
     ports:
       - "8080:80"
     environment:
-      - JWT_SECRET=vexius_dev_secret_key_change_me_in_prod
+      - JWT_SECRET=vx9a8d7k2p5m4n1
       - JWT_HEADER=Authorization
     volumes:
       - onlyoffice_data:/var/www/onlyoffice/Data

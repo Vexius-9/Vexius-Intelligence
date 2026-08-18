@@ -19,34 +19,26 @@ export class AiService {
   private async getModel(providerModelId: string) {
     const [provider, modelId] = providerModelId.split(':');
     
-    if (provider === 'openai') {
-      // @ts-ignore
-      const { createOpenAI } = await Function('return import("@ai-sdk/openai")')();
-      const openai = createOpenAI({
-        apiKey: this.configService.get('OPENAI_API_KEY'),
+    // @ts-ignore
+    const { createOpenAI } = await Function('return import("@ai-sdk/openai")')();
+
+    if (provider === 'xai' || provider === 't2') {
+      const xai = createOpenAI({
+        baseURL: this.configService.get('LLM_T2_BASE_URL') || 'https://api.x.ai/v1',
+        apiKey: this.configService.get('LLM_T2_API_KEY'),
       });
-      return openai(modelId || 'gpt-4o');
+      return xai(modelId || this.configService.get('LLM_T2_MODEL') || 'grok-4.3');
     } 
     
-    if (provider === 'anthropic') {
-      // @ts-ignore
-      const { createAnthropic } = await Function('return import("@ai-sdk/anthropic")')();
-      const anthropic = createAnthropic({
-        apiKey: this.configService.get('ANTHROPIC_API_KEY'),
+    if (provider === 'deepseek' || provider === 't1') {
+      const deepseek = createOpenAI({
+        baseURL: this.configService.get('LLM_T1_BASE_URL') || 'https://api.deepseek.com/v1',
+        apiKey: this.configService.get('LLM_T1_API_KEY'),
       });
-      return anthropic(modelId || 'claude-3-5-sonnet-20240620');
+      return deepseek(modelId || this.configService.get('LLM_T1_MODEL') || 'deepseek-chat');
     }
 
-    if (provider === 'google') {
-      // @ts-ignore
-      const { createGoogleGenerativeAI } = await Function('return import("@ai-sdk/google")')();
-      const google = createGoogleGenerativeAI({
-        apiKey: this.configService.get('GEMINI_API_KEY'),
-      });
-      return google(modelId || 'gemini-1.5-pro-latest');
-    }
-
-    throw new BadRequestException(`Unsupported provider: ${provider}`);
+    throw new BadRequestException(`Unsupported provider: ${provider}. Gunakan 'xai' (T2) atau 'deepseek' (T1).`);
   }
 
   /**
