@@ -45,99 +45,198 @@ export default function Home() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          minHeight: "100vh",
-          padding: "160px 24px 80px 24px",
-          textAlign: "center",
+          width: "100%",
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          style={{ maxWidth: "800px", width: "100%" }}
+        <section
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "160px 24px 80px 24px",
+            textAlign: "center",
+          }}
         >
-          <div
-            style={{
-              display: "inline-block",
-              padding: "4px 12px",
-              borderRadius: "100px",
-              border: "1px solid var(--border-color)",
-              background: "rgba(255,255,255,0.02)",
-              fontSize: "0.85rem",
-              color: "var(--text-secondary)",
-              marginBottom: "32px",
-              letterSpacing: "-0.01em",
-            }}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            style={{ maxWidth: "800px", width: "100%" }}
           >
-            Introducing Vexius Engine 2.0
+            <div
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: "100px",
+                border: "1px solid var(--border-color)",
+                background: "rgba(255,255,255,0.02)",
+                fontSize: "0.85rem",
+                color: "var(--text-secondary)",
+                marginBottom: "32px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Introducing Vexius Engine 2.0
+            </div>
+            
+            <h1 className="heading-hero" style={{ marginBottom: "24px" }}>
+              Document collaboration, <br />
+              engineered for speed.
+            </h1>
+            
+            <p
+              style={{
+                fontSize: "1.1rem",
+                color: "var(--text-secondary)",
+                lineHeight: 1.6,
+                marginBottom: "48px",
+                maxWidth: "500px",
+                margin: "0 auto 48px auto",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Vexius brings deep reasoning directly into your workspace. No context switching, just seamless AI integration.
+            </p>
+            
+            <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
+              <button className="btn-primary">
+                Start Building
+                <ChevronRight size={16} />
+              </button>
+              <button className="btn-secondary">
+                Documentation
+              </button>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" style={{ width: "100%", maxWidth: "1200px", padding: "120px 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: "80px" }}>
+            <h2 style={{ fontSize: "2.5rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "16px" }}>
+              Built for complex workflows.
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", maxWidth: "500px", margin: "0 auto" }}>
+              Everything you need to scale intelligent document processing without the overhead.
+            </p>
           </div>
-          
-          <h1 className="heading-hero" style={{ marginBottom: "24px" }}>
-            Document collaboration, <br />
-            engineered for speed.
-          </h1>
-          
-          <p
-            style={{
-              fontSize: "1.1rem",
-              color: "var(--text-secondary)",
-              lineHeight: 1.6,
-              marginBottom: "48px",
-              maxWidth: "500px",
-              margin: "0 auto 48px auto",
-              letterSpacing: "-0.01em",
-            }}
+
+          {/* Bento Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="bento-grid"
           >
-            Vexius brings deep reasoning directly into your workspace. No context switching, just seamless AI integration.
+            <div className="bento-box" style={{ gridColumn: "span 2" }}>
+              <h3 className="text-bento-title">Native RAG Architecture</h3>
+              <p className="text-bento-desc">
+                Instantly query across all your workspace documents. Our infrastructure indexes your data in real-time, enabling semantic search with sub-second latency powered by OpenAI embeddings.
+              </p>
+            </div>
+            
+            <div className="bento-box">
+              <h3 className="text-bento-title">ONLYOFFICE Core</h3>
+              <p className="text-bento-desc">
+                AI actions that format and write directly into your canvas using robust JWT-secured WOPI protocols.
+              </p>
+            </div>
+
+            <div className="bento-box">
+              <h3 className="text-bento-title">Dual-LLM Engine</h3>
+              <p className="text-bento-desc">
+                Powered by Grok (T2) and DeepSeek (T1) for complex reasoning. Smart routing optimizes for both cost and speed.
+              </p>
+            </div>
+            
+            <div className="bento-box" style={{ gridColumn: "span 2" }}>
+              <h3 className="text-bento-title">Workspace Isolation</h3>
+              <p className="text-bento-desc">
+                Every document belongs to a strictly isolated workspace, ensuring complete separation of concerns and data privacy.
+              </p>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Security Section */}
+        <section id="security" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "64px", alignItems: "center" }}>
+            <div style={{ flex: "1 1 400px" }}>
+              <h2 style={{ fontSize: "2.5rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "24px" }}>
+                Enterprise-grade security by default.
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", lineHeight: 1.6, marginBottom: "32px" }}>
+                We do not compromise on security. Vexius Engine uses PostgreSQL Row Level Security (RLS) to guarantee that users can only access their own workspace data at the database level.
+              </p>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "16px" }}>
+                {[
+                  "Immutable Audit Logging for all actions.",
+                  "Strict API Throttling & Rate Limiting.",
+                  "Comprehensive AI Token Tracking per Workspace.",
+                  "Zero-Trust Architecture via Supabase Auth."
+                ].map((item, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: "12px", color: "var(--text-primary)", fontSize: "0.95rem" }}>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div style={{ flex: "1 1 400px" }}>
+              {/* Mock Code Block UI */}
+              <div className="bento-box" style={{ padding: "0", background: "#000" }}>
+                <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--border-color)", display: "flex", gap: "8px" }}>
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
+                </div>
+                <div style={{ padding: "24px", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                  <span style={{ color: "#a855f7" }}>CREATE POLICY</span> "Isolated Workspace Access"<br />
+                  <span style={{ color: "#a855f7" }}>ON</span> documents<br />
+                  <span style={{ color: "#a855f7" }}>FOR ALL</span><br />
+                  <span style={{ color: "#a855f7" }}>USING</span> (workspace_id <span style={{ color: "#a855f7" }}>IN</span> (<br />
+                  &nbsp;&nbsp;<span style={{ color: "#a855f7" }}>SELECT</span> workspace_id <span style={{ color: "#a855f7" }}>FROM</span> members<br />
+                  &nbsp;&nbsp;<span style={{ color: "#a855f7" }}>WHERE</span> user_id <span style={{ color: "#a855f7" }}>=</span> auth.uid()<br />
+                  ));
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Enterprise CTA */}
+        <section id="enterprise" style={{ width: "100%", maxWidth: "800px", padding: "160px 24px", textAlign: "center" }}>
+          <h2 style={{ fontSize: "3rem", fontWeight: 600, letterSpacing: "-0.04em", marginBottom: "24px" }}>
+            Ready to scale?
+          </h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "48px" }}>
+            Deploy Vexius Engine on your own infrastructure or let us manage it for you. Perfect for high-compliance environments.
           </p>
-          
           <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-            <button className="btn-primary">
-              Start Building
-              <ChevronRight size={16} />
-            </button>
-            <button className="btn-secondary">
-              Documentation
+            <button className="btn-primary" style={{ padding: "16px 32px" }}>
+              Contact Sales
             </button>
           </div>
-        </motion.div>
+        </section>
 
-        {/* Bento Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-          className="bento-grid"
-          style={{ marginTop: "80px" }}
-        >
-          <div className="bento-box" style={{ gridColumn: "span 2" }}>
-            <h3 className="text-bento-title">Native RAG Architecture</h3>
-            <p className="text-bento-desc">
-              Instantly query across all your workspace documents. Our infrastructure indexes your data in real-time, enabling semantic search with sub-second latency.
-            </p>
+        {/* Footer */}
+        <footer style={{ width: "100%", borderTop: "1px solid var(--border-color)", padding: "48px 24px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "var(--text-primary)" }}>
+              <div style={{ width: "16px", height: "16px", background: "#fff", borderRadius: "2px" }} />
+              Vexius
+            </div>
+            <div style={{ display: "flex", gap: "24px" }}>
+              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Twitter</Link>
+              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>GitHub</Link>
+              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Terms</Link>
+              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Privacy</Link>
+            </div>
           </div>
-          
-          <div className="bento-box">
-            <h3 className="text-bento-title">Deep Integration</h3>
-            <p className="text-bento-desc">
-              AI actions that format and write directly into your canvas.
-            </p>
-          </div>
-
-          <div className="bento-box">
-            <h3 className="text-bento-title">Enterprise Security</h3>
-            <p className="text-bento-desc">
-              Isolated RLS security, audit logs, and token tracking out of the box.
-            </p>
-          </div>
-          
-          <div className="bento-box" style={{ gridColumn: "span 2" }}>
-            <h3 className="text-bento-title">Dual-LLM Engine</h3>
-            <p className="text-bento-desc">
-              Powered by Grok (T2) and DeepSeek (T1) for complex reasoning, and OpenAI solely for high-dimensional embeddings. Optimized for cost and performance.
-            </p>
-          </div>
-        </motion.div>
+        </footer>
       </main>
     </div>
   );
