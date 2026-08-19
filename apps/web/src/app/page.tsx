@@ -27,9 +27,10 @@ export default function Home() {
           </div>
           
           <div className="nav-links" style={{ display: "flex", gap: "32px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-            <Link href="#features" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Features</Link>
-            <Link href="#security" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Security</Link>
-            <Link href="#enterprise" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Enterprise</Link>
+            <Link href="/docs" className="hover-link">Docs</Link>
+            <Link href="#features" className="hover-link">Features</Link>
+            <Link href="#security" className="hover-link">Security</Link>
+            <Link href="#enterprise" className="hover-link">Enterprise</Link>
           </div>
 
           <Link href="/login" className="btn-secondary" style={{ padding: "8px 16px", fontSize: "0.85rem", display: "inline-block", textAlign: "center" }}>
@@ -163,13 +164,13 @@ export default function Home() {
               </p>
               
               <div style={{ display: "flex", gap: "16px", justifyContent: "flex-start" }}>
-                <button className="btn-primary">
+                <Link href="/login" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                   Start Building
                   <ChevronRight size={16} />
-                </button>
-                <button className="btn-secondary">
+                </Link>
+                <Link href="/docs" className="btn-secondary" style={{ display: "inline-block", textAlign: "center", padding: "12px 24px" }}>
                   Documentation
-                </button>
+                </Link>
               </div>
             </motion.div>
 
@@ -347,9 +348,10 @@ export default function Home() {
               Vexius
             </div>
             <div style={{ display: "flex", gap: "24px" }}>
-              <Link href="/twitter" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Twitter</Link>
-              <Link href="/terms" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Terms</Link>
-              <Link href="/privacy" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Privacy</Link>
+              <Link href="/docs" className="hover-link">Documentation</Link>
+              <Link href="/twitter" className="hover-link">Twitter</Link>
+              <Link href="/terms" className="hover-link">Terms</Link>
+              <Link href="/privacy" className="hover-link">Privacy</Link>
             </div>
           </div>
         </footer>
