@@ -10,6 +10,10 @@ export default function DashboardPage() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
 
   // 1. Fetch workspaces on mount
@@ -87,15 +91,23 @@ export default function DashboardPage() {
     }
   };
 
-  const deleteDocument = async (e: React.MouseEvent, docId: string) => {
-    e.preventDefault(); // prevent Link navigation
+  const handleDeleteClick = (e: React.MouseEvent, docId: string) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this document? This action cannot be undone.")) return;
+    setDocToDelete(docId);
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!docToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
 
     try {
       const token = localStorage.getItem("vexius_token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/documents/${docId}`, {
+      const res = await fetch(`${apiUrl}/documents/${docToDelete}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -103,10 +115,14 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error("Failed to delete document");
       
       // Remove from state
-      setDocuments(docs => docs.filter(d => d.id !== docId));
+      setDocuments(docs => docs.filter(d => d.id !== docToDelete));
+      setShowDeleteModal(false);
+      setDocToDelete(null);
     } catch (err) {
       console.error(err);
-      alert("Failed to delete document");
+      setDeleteError("Failed to delete document. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -262,7 +278,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     className="trash-btn"
-                    onClick={(e) => deleteDocument(e, doc.id)}
+                    onClick={(e) => handleDeleteClick(e, doc.id)}
                     style={{
                       opacity: 0,
                       transition: "opacity 0.2s",
@@ -292,6 +308,60 @@ export default function DashboardPage() {
               <p style={{ fontSize: "0.9rem" }}>Create a new document to start collaborating in this workspace.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, backdropFilter: "blur(4px)"
+        }}>
+          <div style={{
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-color)",
+            padding: "24px",
+            borderRadius: "12px",
+            width: "90%",
+            maxWidth: "400px",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+          }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "8px", color: "var(--text-primary)" }}>
+              Delete Document
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "24px" }}>
+              Are you sure you want to delete this document? This action cannot be undone.
+            </p>
+            {deleteError && (
+              <p style={{ color: "#ef4444", fontSize: "0.85rem", marginBottom: "16px" }}>{deleteError}</p>
+            )}
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button 
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                style={{
+                  padding: "8px 16px", borderRadius: "6px", border: "1px solid var(--border-color)",
+                  background: "transparent", color: "var(--text-primary)", cursor: isDeleting ? "not-allowed" : "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                style={{
+                  padding: "8px 16px", borderRadius: "6px", border: "none",
+                  background: "#ef4444", color: "#fff", cursor: isDeleting ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", gap: "8px"
+                }}
+              >
+                {isDeleting && <Loader2 size={14} className="animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
