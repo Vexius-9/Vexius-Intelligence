@@ -32,7 +32,7 @@ export function IsometricStack() {
         {layers.map((layer, idx) => (
           <motion.div
             key={layer.id}
-            initial={{ z: idx * 45, x: 0, y: 0 }}
+            initial={{ z: idx * 40, x: 0, y: 0 }}
             whileHover={{ x: -30, y: 30 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
             style={{

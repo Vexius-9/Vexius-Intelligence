@@ -41,8 +41,6 @@ export default function Home() {
       {/* Hero Section */}
       <main
         style={{
-          position: "relative",
-          zIndex: 10,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -51,16 +49,77 @@ export default function Home() {
       >
         <section
           style={{
+            position: "relative",
             minHeight: "100vh",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             padding: "160px 24px 80px 24px",
             width: "100%",
-            maxWidth: "1200px",
+            overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", flexWrap: "wrap", width: "100%", gap: "64px", alignItems: "center" }}>
+          {/* Ambient Glow (Right) */}
+          <motion.div
+            animate={{
+              x: [0, 60, -30, 0],
+              y: [0, 40, -50, 0],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              position: "absolute",
+              top: "20%",
+              right: "10%",
+              width: "600px",
+              height: "600px",
+              background: "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(0,0,0,0) 70%)",
+              filter: "blur(80px)",
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+
+          {/* Ambient Glow (Top Left) */}
+          <motion.div
+            animate={{
+              x: [0, -50, 40, 0],
+              y: [0, -30, 60, 0],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              position: "absolute",
+              top: "-10%",
+              left: "-10%",
+              width: "500px",
+              height: "500px",
+              background: "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(0,0,0,0) 70%)",
+              filter: "blur(80px)",
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+
+          {/* Grid Pattern */}
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+            maskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
+            WebkitMaskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }} />
+
+          <div style={{ display: "flex", flexWrap: "wrap", width: "100%", maxWidth: "1200px", gap: "64px", alignItems: "center", position: "relative", zIndex: 1 }}>
             
             {/* Left Content */}
             <motion.div
