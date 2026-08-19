@@ -1,81 +1,96 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { DocumentEditor } from "@/components/editor/DocumentEditor";
+import React, { useState, useEffect, useRef } from "react";
 import { AICopilot } from "@/components/ai/AICopilot";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Check } from "lucide-react";
+import { DocumentEditor } from "@onlyoffice/document-editor-react";
 
 export default function DocumentPage({ params }: { params: { workspaceId: string; docId: string } }) {
-  const [docContent, setDocContent] = useState("");
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [docMetadata, setDocMetadata] = useState<any>(null);
+  const [editorConfig, setEditorConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Renaming state
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
-    const fetchDocContent = async () => {
+    const initDocument = async () => {
       try {
         const token = localStorage.getItem("vexius_token");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         
-        // Fetch the signed download URL from backend
-        const res = await fetch(`${apiUrl}/documents/${params.docId}/download`, {
+        // 1. Fetch metadata
+        const metaRes = await fetch(`${apiUrl}/documents/${params.docId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
-        
-        if (res.ok) {
-          const { url } = await res.json();
-          // Fetch the actual HTML content from Supabase Storage
-          const contentRes = await fetch(url);
-          if (contentRes.ok) {
-            const html = await contentRes.text();
-            setDocContent(html);
-          }
+        if (metaRes.ok) {
+          const data = await metaRes.json();
+          setDocMetadata(data);
+          setEditName(data.name);
+        }
+
+        // 2. Fetch editor config
+        const confRes = await fetch(`${apiUrl}/documents/${params.docId}/editor-config`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (confRes.ok) {
+          const configData = await confRes.json();
+          setEditorConfig(configData);
         }
       } catch (err) {
-        console.error("Failed to load document content", err);
+        console.error("Failed to load document", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDocContent();
+    initDocument();
   }, [params.docId]);
 
-  const saveToBackend = useCallback(async (content: string) => {
-    setSaveStatus("saving");
+  const handleRenameSubmit = async () => {
+    setIsRenaming(false);
+    if (!editName.trim() || editName === docMetadata?.name) {
+      setEditName(docMetadata?.name || "Untitled Document");
+      return;
+    }
+
     try {
       const token = localStorage.getItem("vexius_token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      
-      const res = await fetch(`${apiUrl}/documents/${params.docId}/content`, {
-        method: "POST",
+      const res = await fetch(`${apiUrl}/documents/${params.docId}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ name: editName })
       });
-
-      if (!res.ok) throw new Error("Failed to save");
-      setSaveStatus("saved");
-      
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      if (res.ok) {
+        setDocMetadata({ ...docMetadata, name: editName });
+      } else {
+        throw new Error("Failed to rename");
+      }
     } catch (err) {
       console.error(err);
-      setSaveStatus("error");
+      alert("Failed to rename document");
+      setEditName(docMetadata?.name);
     }
-  }, [params.docId]);
-
-  const handleUpdate = (content: string) => {
-    setDocContent(content);
-    setSaveStatus("saving");
-    
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      saveToBackend(content);
-    }, 1000);
   };
-  
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleRenameSubmit();
+    } else if (e.key === "Escape") {
+      setIsRenaming(false);
+      setEditName(docMetadata?.name);
+    }
+  };
+
+  const onDocumentReady = () => {
+    console.log("ONLYOFFICE Editor is ready");
+  };
+
   return (
     <div style={{
       display: "flex",
@@ -98,19 +113,50 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
         >
           <ArrowLeft size={18} />
         </Link>
-        <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Workspace {params.workspaceId}</span>
-        <span style={{ color: "var(--text-secondary)" }}>/</span>
-        <span style={{ fontWeight: 500, fontSize: "0.95rem" }}>Untitled Document</span>
+        
+        {/* Breadcrumb / Title */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {isRenaming ? (
+            <input 
+              autoFocus
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onBlur={handleRenameSubmit}
+              onKeyDown={handleKeyDown}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-color)",
+                color: "var(--text-primary)",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "0.95rem",
+                fontWeight: 500,
+                outline: "none",
+                width: "300px"
+              }}
+            />
+          ) : (
+            <span 
+              onClick={() => setIsRenaming(true)}
+              style={{ 
+                fontWeight: 500, 
+                fontSize: "0.95rem", 
+                cursor: "pointer",
+                padding: "4px 8px",
+                marginLeft: "-8px", // visual alignment
+                borderRadius: "4px",
+                transition: "background 0.2s"
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = "var(--bg-secondary)"}
+              onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
+              title="Click to rename"
+            >
+              {docMetadata?.name || "Untitled Document"}
+            </span>
+          )}
+        </div>
         
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
-            {saveStatus === "saving" && <Loader2 size={12} className="animate-spin" />}
-            {saveStatus === "saved" && <Check size={12} className="text-green-500" />}
-            {saveStatus === "error" && <span style={{color: "var(--color-error)"}}>Error saving</span>}
-            {saveStatus === "idle" && "Saved locally"}
-            {saveStatus === "saving" && "Saving..."}
-            {saveStatus === "saved" && "Saved to cloud"}
-          </span>
           <button style={{
             background: "#fff",
             color: "#000",
@@ -130,30 +176,32 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         
         {/* Main Editor Canvas */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", overflowY: "auto" }}>
-          <div style={{
-            width: "100%",
-            maxWidth: "800px",
-            padding: "48px 32px"
-          }}>
-            {loading ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "100px", color: "var(--text-secondary)" }}>
-                <Loader2 className="animate-spin" />
-              </div>
-            ) : (
-              <DocumentEditor 
-                initialContent={docContent}
-                onUpdate={handleUpdate}
-              />
-            )}
-          </div>
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", overflowY: "hidden", background: "#f3f4f6" }}>
+          {loading ? (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
+              <Loader2 className="animate-spin" />
+            </div>
+          ) : editorConfig ? (
+            <DocumentEditor
+              id="docxEditor"
+              documentServerUrl={process.env.NEXT_PUBLIC_ONLYOFFICE_URL!}
+              config={editorConfig}
+              events_onDocumentReady={onDocumentReady}
+            />
+          ) : (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
+              Failed to load document editor
+            </div>
+          )}
         </div>
 
         {/* AI Copilot Sidebar */}
         <AICopilot 
           documentContext={{
-            documentTitle: "Untitled Document",
-            documentContent: docContent
+            documentTitle: docMetadata?.name || "Untitled Document",
+            // For ONLYOFFICE, getting raw text requires plugin integration. 
+            // We'll pass empty for now.
+            documentContent: "" 
           }}
         />
 

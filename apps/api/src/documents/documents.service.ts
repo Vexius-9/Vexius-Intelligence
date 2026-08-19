@@ -368,4 +368,89 @@ export class DocumentsService {
       }
     }
   }
+
+  async deleteDocument(id: string, userId: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    // Verify membership
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: document.workspaceId, userId } },
+    });
+
+    if (!membership || membership.role === 'viewer') {
+      throw new UnauthorizedException('Not authorized to delete documents in this workspace');
+    }
+
+    // Attempt to delete from storage. Ignore errors if file doesn't exist
+    try {
+      await this.storageClient.deleteFile('vexius-documents', document.storageKey);
+    } catch (e) {
+      this.logger.warn(`Could not delete storage file ${document.storageKey} for document ${id}`);
+    }
+
+    // Delete from DB (cascade deletes versions/chunks)
+    await this.prisma.document.delete({
+      where: { id }
+    });
+
+    // Log action
+    await this.auditService.logAction(
+      document.workspaceId,
+      userId,
+      'DOCUMENT_DELETED',
+      id
+    );
+
+    return { success: true };
+  }
+
+  async getDocument(id: string, userId: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id }
+    });
+    if (!document) throw new NotFoundException('Document not found');
+    
+    // Verify membership
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: document.workspaceId, userId } }
+    });
+    if (!membership) throw new UnauthorizedException('Not authorized to view this document');
+    
+    return document;
+  }
+
+  async renameDocument(id: string, userId: string, newName: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id }
+    });
+    if (!document) throw new NotFoundException('Document not found');
+
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: document.workspaceId, userId } }
+    });
+
+    if (!membership || membership.role === 'viewer') {
+      throw new UnauthorizedException('Not authorized to edit this document');
+    }
+
+    const updated = await this.prisma.document.update({
+      where: { id },
+      data: { name: newName }
+    });
+
+    await this.auditService.logAction(
+      document.workspaceId,
+      userId,
+      'DOCUMENT_UPDATE',
+      document.id
+    );
+
+    return updated;
+  }
 }

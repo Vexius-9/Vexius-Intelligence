@@ -1,6 +1,6 @@
 import { 
   Controller, Post, Get, Param, UseGuards, 
-  Req, BadRequestException, Body 
+  Req, BadRequestException, Body, Delete, Patch 
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { DocumentsService } from './documents.service';
@@ -95,6 +95,37 @@ export class DocumentsController {
     @CurrentUser() user: any
   ) {
     return this.documentsService.getEditorConfig(id, user.id);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getDocument(
+    @Param('id') id: string,
+    @CurrentUser() user: any
+  ) {
+    return this.documentsService.getDocument(id, user.id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  async renameDocument(
+    @Param('id') id: string,
+    @Body('name') name: string,
+    @CurrentUser() user: any
+  ) {
+    if (!name) {
+      throw new BadRequestException('name is required');
+    }
+    return this.documentsService.renameDocument(id, user.id, name);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteDocument(
+    @Param('id') id: string,
+    @CurrentUser() user: any
+  ) {
+    return this.documentsService.deleteDocument(id, user.id);
   }
 
   // ONLYOFFICE Callback - public endpoint, no JwtAuthGuard

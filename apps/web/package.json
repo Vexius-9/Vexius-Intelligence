@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@onlyoffice/document-editor-react": "^2.2.0",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
     "@solana/wallet-adapter-react-ui": "^0.9.39",

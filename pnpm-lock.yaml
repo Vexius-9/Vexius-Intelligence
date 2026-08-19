@@ -193,6 +193,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@onlyoffice/document-editor-react':
+        specifier: ^2.2.0
+        version: 2.2.0(@onlyoffice/doceditor-types@9.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@solana/wallet-adapter-base':
         specifier: ^0.9.27
         version: 0.9.27(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
@@ -1517,6 +1520,16 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@onlyoffice/doceditor-types@9.4.0':
+    resolution: {integrity: sha512-YYtJa0nVVeYUVBhIlTpZWkgqSeVxhqRSB7QQoIaJj2Q4+V6vRdDjUznIHFOF7Ss2EggRQWdiYcXEOcfxhIh5UQ==}
+
+  '@onlyoffice/document-editor-react@2.2.0':
+    resolution: {integrity: sha512-SPgeJ1lK+I5mpcCUi6Qz98QVtlZR6axxCArgHoKNNBfFqXNmb6iDOf5Z1QUiVQ0xr57oo84D0ptyXZaF8K51nA==}
+    peerDependencies:
+      '@onlyoffice/doceditor-types': '>=9.3.1'
+      react: ^16.9.0 || ^17 || ^18 || ^19
+      react-dom: ^16.9.0 || ^17 || ^18 || ^19
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -9491,6 +9504,15 @@ snapshots:
       fastq: 1.20.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@onlyoffice/doceditor-types@9.4.0': {}
+
+  '@onlyoffice/document-editor-react@2.2.0(@onlyoffice/doceditor-types@9.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@onlyoffice/doceditor-types': 9.4.0
+      lodash: 4.18.1
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
 
   '@opentelemetry/api@1.9.0': {}
 
