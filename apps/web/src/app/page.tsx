@@ -347,10 +347,9 @@ export default function Home() {
               Vexius
             </div>
             <div style={{ display: "flex", gap: "24px" }}>
-              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Twitter</Link>
-              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>GitHub</Link>
-              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Terms</Link>
-              <Link href="#" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Privacy</Link>
+              <Link href="/twitter" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Twitter</Link>
+              <Link href="/terms" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Terms</Link>
+              <Link href="/privacy" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Privacy</Link>
             </div>
           </div>
         </footer>
