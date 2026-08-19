@@ -5,39 +5,69 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import bs58 from "bs58";
 
 export default function LoginPage() {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, signMessage, disconnect } = useWallet();
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (connected && publicKey) {
-      // Mulai proses verifikasi dummy
+    if (connected && publicKey && signMessage) {
       setVerifying(true);
       setError(null);
 
       const verifyToken = async () => {
-        // Simulasi network request delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        
-        // MOCK LOGIC: Verify if the wallet holds >= 10,000,000 (1%) Vexius tokens.
-        // Currently assuming ALL wallets are successful (dummy success).
-        // To test failure, set isSuccess to false.
-        const isSuccess = true; 
-
-        if (isSuccess) {
+        try {
+          const walletAddress = publicKey.toBase58();
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+          
+          // 1. Get Nonce from Backend
+          const nonceRes = await fetch(`${apiUrl}/auth/nonce`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress }),
+          });
+          
+          if (!nonceRes.ok) throw new Error("Failed to fetch nonce from backend");
+          const { message } = await nonceRes.json();
+          
+          // 2. Sign Message
+          const messageBytes = new TextEncoder().encode(message);
+          const signature = await signMessage(messageBytes);
+          const signatureBase58 = bs58.encode(signature);
+          
+          // 3. Verify Signature & Balance on Backend
+          const verifyRes = await fetch(`${apiUrl}/auth/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress, signature: signatureBase58 }),
+          });
+          
+          if (!verifyRes.ok) {
+            const errData = await verifyRes.json();
+            throw new Error(errData.message || "Failed to verify signature on backend");
+          }
+          
+          const { access_token } = await verifyRes.json();
+          
+          // In a real app, you would store this access_token in a cookie or localStorage
+          localStorage.setItem("vexius_token", access_token);
+          
           router.push("/dashboard");
-        } else {
+        } catch (err: any) {
+          console.error(err);
+          setError(err.message || "Authentication failed.");
+          disconnect(); // Disconnect if failed so they can try again
+        } finally {
           setVerifying(false);
-          setError("Access Denied: You must hold at least 1% (10,000,000) of Vexius supply.");
         }
       };
 
       verifyToken();
     }
-  }, [connected, publicKey, router]);
+  }, [connected, publicKey, signMessage, router, disconnect]);
 
   return (
     <div style={{

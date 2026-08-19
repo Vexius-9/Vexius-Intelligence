@@ -24,9 +24,14 @@ export function AICopilot() {
       // e.g., POST http://localhost:8080/ai/chat
       
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("vexius_token");
+      
       const res = await fetch(`${apiUrl}/ai/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
         body: JSON.stringify({ prompt: userMessage }),
       });
       

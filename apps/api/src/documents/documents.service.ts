@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageClient } from '@vexius/storage';
 import { ConfigService } from '@nestjs/config';
@@ -151,6 +151,106 @@ export class DocumentsService {
     } catch (error) {
       this.logger.error('Failed to generate signed url', error);
       throw new InternalServerErrorException('Storage access failed');
+    }
+  }
+
+  async createBlankDocument(userId: string, workspaceId: string, name: string) {
+    // 1. Verify membership
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+
+    if (!membership || membership.role === 'viewer') {
+      throw new UnauthorizedException('Not authorized to create documents in this workspace');
+    }
+
+    // 2. Create default content buffer
+    const defaultContent = '<p>Start writing here...</p>';
+    const fileBuffer = Buffer.from(defaultContent, 'utf-8');
+    const mimeType = 'text/html';
+
+    // 3. Setup document in DB
+    const documentId = require('crypto').randomUUID();
+    const storagePath = `workspaces/${workspaceId}/documents/${documentId}/versions/1-blank.html`;
+
+    // 4. Upload to storage
+    await this.storageClient.uploadFile('vexius-documents', storagePath, fileBuffer, mimeType);
+
+    // 5. Transaction to save document and version
+    const result = await this.prisma.$transaction(async (tx) => {
+      const doc = await tx.document.create({
+        data: {
+          id: documentId,
+          workspaceId,
+          ownerId: userId,
+          name: name || 'Untitled Document',
+          type: 'document',
+          mimeType,
+          storageKey: storagePath,
+          size: fileBuffer.length,
+          currentVersion: 1,
+        },
+      });
+
+      await tx.documentVersion.create({
+        data: {
+          documentId: doc.id,
+          version: 1,
+          storageKey: storagePath,
+          createdBy: userId,
+        },
+      });
+
+      return doc;
+    });
+
+    // 6. Audit Log
+    await this.auditService.logAction(
+      workspaceId,
+      userId,
+      'DOCUMENT_CREATE',
+      result.id
+    );
+
+    return result;
+  }
+
+  async saveContent(documentId: string, userId: string, content: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) throw new NotFoundException('Document not found');
+
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: document.workspaceId, userId } },
+    });
+
+    if (!membership || membership.role === 'viewer') {
+      throw new UnauthorizedException('Not authorized to edit this document');
+    }
+
+    try {
+      const fileBuffer = Buffer.from(content, 'utf-8');
+      
+      // Store in place (overwrite) or increment version. For autosave, overwriting is better to avoid spamming versions.
+      // Let's overwrite the current storage key for autosave, or we can use the same path.
+      // To keep it simple, we overwrite the current version.
+      const storagePath = document.storageKey;
+      
+      await this.storageClient.uploadFile('vexius-documents', storagePath, fileBuffer, 'text/html');
+
+      const updatedDoc = await this.prisma.document.update({
+        where: { id: document.id },
+        data: {
+          size: fileBuffer.length,
+        },
+      });
+
+      return { success: true, size: updatedDoc.size };
+    } catch (error) {
+      this.logger.error('Failed to save document content', error);
+      throw new InternalServerErrorException('Failed to save document');
     }
   }
 

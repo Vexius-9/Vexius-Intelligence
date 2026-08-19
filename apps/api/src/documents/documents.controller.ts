@@ -44,6 +44,19 @@ export class DocumentsController {
     );
   }
 
+  @Post('create')
+  @UseGuards(JwtAuthGuard)
+  async createDocument(
+    @Body('workspaceId') workspaceId: string,
+    @Body('name') name: string,
+    @CurrentUser() user: any
+  ) {
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+    return this.documentsService.createBlankDocument(user.id, workspaceId, name);
+  }
+
   @Get('workspace/:workspaceId')
   @UseGuards(JwtAuthGuard)
   async getWorkspaceDocuments(
@@ -60,6 +73,19 @@ export class DocumentsController {
     @CurrentUser() user: any
   ) {
     return this.documentsService.getDocumentDownloadUrl(id, user.id);
+  }
+
+  @Post(':id/content')
+  @UseGuards(JwtAuthGuard)
+  async saveDocumentContent(
+    @Param('id') id: string,
+    @Body('content') content: string,
+    @CurrentUser() user: any
+  ) {
+    if (typeof content !== 'string') {
+      throw new BadRequestException('Content must be a string');
+    }
+    return this.documentsService.saveContent(id, user.id, content);
   }
 
   @Get(':id/editor-config')
