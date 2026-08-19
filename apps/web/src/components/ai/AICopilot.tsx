@@ -1,53 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
-import { Send, Bot, Sparkles } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Send, Bot, Sparkles, ChevronDown } from "lucide-react";
+import { useChat } from "ai/react";
 
-export function AICopilot() {
-  const [prompt, setPrompt] = useState("");
-  const [messages, setMessages] = useState<{role: "user" | "assistant", content: string}[]>([
-    { role: "assistant", content: "I am your Vexius AI Copilot. How can I help you write today?" }
-  ]);
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    if (!prompt.trim() || loading) return;
-
-    const userMessage = prompt;
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setPrompt("");
-    setLoading(true);
-
-    try {
-      // Connect to the API running on port 8080 (Grok/DeepSeek gateway)
-      // This is a placeholder fetch. Ensure you have a corresponding endpoint in apps/api.
-      // e.g., POST http://localhost:8080/ai/chat
-      
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const token = localStorage.getItem("vexius_token");
-      
-      const res = await fetch(`${apiUrl}/ai/chat`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({ prompt: userMessage }),
-      });
-      
-      if (!res.ok) {
-        throw new Error("Failed to communicate with AI Backend");
-      }
-
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply || "AI Response (Mock)" }]);
-    } catch (error) {
-      console.error(error);
-      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I am unable to connect to the backend right now. Is the API running on port 8080?" }]);
-    } finally {
-      setLoading(false);
-    }
+interface AICopilotProps {
+  documentContext?: {
+    selectedText?: string;
+    documentTitle?: string;
+    documentContent?: string;
   };
+}
+
+export function AICopilot({ documentContext }: AICopilotProps) {
+  const [selectedModel, setSelectedModel] = useState<"t1" | "t2">("t1"); // t1 = DeepSeek, t2 = Grok
+  const [token, setToken] = useState<string>("");
+
+  useEffect(() => {
+    setToken(localStorage.getItem("vexius_token") || "");
+  }, []);
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: `${process.env.NEXT_PUBLIC_API_URL}/ai/chat`,
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+    body: {
+      model: selectedModel,
+      context: documentContext
+    },
+    initialMessages: [
+      { id: "1", role: "assistant", content: "I am your Vexius AI Copilot. How can I help you write today?" }
+    ]
+  });
 
   return (
     <div style={{
@@ -74,8 +59,26 @@ export function AICopilot() {
           <Bot size={16} color="#fff" />
         </div>
         <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Copilot</span>
-        <div style={{ marginLeft: "auto", background: "rgba(168, 85, 247, 0.1)", padding: "2px 8px", borderRadius: "100px", color: "#a855f7", fontSize: "0.7rem", fontWeight: 700 }}>
-          Grok/DeepSeek
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+          <select 
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value as "t1" | "t2")}
+            style={{
+              background: "rgba(168, 85, 247, 0.1)",
+              border: "1px solid rgba(168, 85, 247, 0.2)",
+              color: "#a855f7",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              padding: "4px 8px",
+              borderRadius: "6px",
+              outline: "none",
+              cursor: "pointer",
+              appearance: "none"
+            }}
+          >
+            <option value="t1">DeepSeek (T1)</option>
+            <option value="t2">Grok (T2)</option>
+          </select>
         </div>
       </div>
 
@@ -101,7 +104,7 @@ export function AICopilot() {
             </div>
           </div>
         ))}
-        {loading && (
+        {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
           <div style={{ display: "flex", gap: "12px" }}>
             <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                <Sparkles size={12} color="#000" />
@@ -115,7 +118,7 @@ export function AICopilot() {
 
       {/* Input Area */}
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)" }}>
-        <div style={{
+        <form onSubmit={handleSubmit} style={{
           display: "flex",
           background: "var(--bg-primary)",
           border: "1px solid var(--border-color)",
@@ -128,10 +131,9 @@ export function AICopilot() {
         >
           <input
             type="text"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Ask AI for help..."
+            value={input}
+            onChange={handleInputChange}
+            placeholder={`Ask ${selectedModel === "t1" ? "DeepSeek" : "Grok"} for help...`}
             style={{
               flex: 1,
               background: "transparent",
@@ -143,14 +145,14 @@ export function AICopilot() {
             }}
           />
           <button 
-            onClick={handleSend}
-            disabled={loading || !prompt.trim()}
+            type="submit"
+            disabled={isLoading || !input.trim()}
             style={{
               background: "transparent",
               border: "none",
               padding: "0 16px",
-              cursor: (loading || !prompt.trim()) ? "not-allowed" : "pointer",
-              color: (loading || !prompt.trim()) ? "var(--text-secondary)" : "var(--text-primary)",
+              cursor: (isLoading || !input.trim()) ? "not-allowed" : "pointer",
+              color: (isLoading || !input.trim()) ? "var(--text-secondary)" : "var(--text-primary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center"
@@ -158,7 +160,7 @@ export function AICopilot() {
           >
             <Send size={16} />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

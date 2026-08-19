@@ -150,7 +150,12 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
         </div>
 
         {/* AI Copilot Sidebar */}
-        <AICopilot />
+        <AICopilot 
+          documentContext={{
+            documentTitle: "Untitled Document",
+            documentContent: docContent
+          }}
+        />
 
       </div>
     </div>
