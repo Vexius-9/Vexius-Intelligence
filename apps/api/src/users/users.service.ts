@@ -11,14 +11,17 @@ export class UsersService {
    * Syncs a user from Supabase to our Prisma database.
    * If the user doesn't exist, it creates them.
    */
-  async findOrCreateUser(payload: { id: string; email: string }) {
+  async findOrCreateUser(payload: { id: string; email?: string }) {
     try {
+      // Fallback for Solana wallets which do not have an email
+      const safeEmail = payload.email || `${payload.id}@solana.wallet`;
+      
       const user = await this.prisma.user.upsert({
         where: { id: payload.id },
-        update: { email: payload.email }, // Update email if it changed
+        update: { email: safeEmail }, // Update email if it changed
         create: {
           id: payload.id,
-          email: payload.email,
+          email: safeEmail,
         },
       });
       return user;
