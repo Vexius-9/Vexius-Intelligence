@@ -23,6 +23,7 @@
     "@ai-sdk/anthropic": "^4.0.39",
     "@ai-sdk/google": "^4.0.44",
     "@ai-sdk/openai": "^4.0.42",
+    "@fastify/cors": "^11.3.0",
     "@fastify/multipart": "^10.1.1",
     "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.0.1",

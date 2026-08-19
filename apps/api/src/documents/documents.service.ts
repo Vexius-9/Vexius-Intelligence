@@ -17,7 +17,7 @@ export class DocumentsService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private auditService: AuditService,
-    @InjectQueue('document-indexing') private documentIndexingQueue: Queue,
+    @InjectQueue('document-index') private documentIndexingQueue: Queue,
   ) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || '';
     const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') || '';
