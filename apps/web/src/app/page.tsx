@@ -26,7 +26,7 @@ export default function Home() {
             </span>
           </div>
           
-          <div style={{ display: "flex", gap: "24px", fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+          <div className="nav-links" style={{ display: "flex", gap: "32px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
             <Link href="#features" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Features</Link>
             <Link href="#security" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Security</Link>
             <Link href="#enterprise" style={{ transition: "color 0.2s" }} onMouseOver={(e) => (e.currentTarget.style.color = "#fff")} onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}>Enterprise</Link>
@@ -119,7 +119,7 @@ export default function Home() {
             zIndex: 0,
           }} />
 
-          <div style={{ display: "flex", flexWrap: "wrap", width: "100%", maxWidth: "1200px", gap: "64px", alignItems: "center", position: "relative", zIndex: 1 }}>
+          <div className="hero-container" style={{ display: "flex", flexWrap: "wrap", width: "100%", maxWidth: "1200px", gap: "64px", alignItems: "center", position: "relative", zIndex: 1 }}>
             
             {/* Left Content */}
             <motion.div

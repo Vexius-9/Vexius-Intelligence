@@ -135,7 +135,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div style={{ 
+        <div className="workspace-grid" style={{ 
           display: "grid", 
           gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", 
           gap: "24px" 
@@ -195,7 +195,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div style={{ 
+          <div className="document-grid" style={{ 
             display: "grid", 
             gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", 
             gap: "16px" 

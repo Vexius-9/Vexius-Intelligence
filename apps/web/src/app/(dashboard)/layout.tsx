@@ -23,9 +23,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-primary)" }}>
+    <div className="dashboard-container" style={{ display: "flex", minHeight: "100vh", background: "var(--bg-primary)" }}>
       {/* Sidebar */}
-      <aside style={{ 
+      <aside className="dashboard-sidebar" style={{ 
         width: "260px", 
         borderRight: "1px solid var(--border-color)",
         display: "flex",
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Header */}
-        <header style={{ 
+        <header className="dashboard-header" style={{ 
           height: "64px", 
           borderBottom: "1px solid var(--border-color)",
           display: "flex", 
