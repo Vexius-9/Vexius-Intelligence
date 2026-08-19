@@ -17,8 +17,11 @@ async function bootstrap() {
   // Security Headers
   await app.register(helmet as any);
 
-  app.enableCors();
-  
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
   await app.register(fastifyMultipart as any);
   
   // Use port from environment (Railway sets PORT automatically)
