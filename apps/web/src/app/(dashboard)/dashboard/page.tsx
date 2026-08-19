@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   return (
@@ -18,12 +19,15 @@ export default function DashboardPage() {
         gap: "24px" 
       }}>
         {/* Mock Workspace Card 1 */}
-        <div style={{
+        <Link href="/workspace/engineering/document/readme" style={{
           padding: "24px",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-color)",
           borderRadius: "12px",
-          transition: "border-color 0.2s"
+          transition: "border-color 0.2s",
+          textDecoration: "none",
+          display: "block",
+          color: "inherit"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
             <div style={{ width: "40px", height: "40px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }} />
@@ -33,7 +37,7 @@ export default function DashboardPage() {
           </div>
           <h3 style={{ fontSize: "1.1rem", fontWeight: 500, marginBottom: "8px" }}>Engineering Team</h3>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>3 active documents • 5 members</p>
-        </div>
+        </Link>
 
         {/* Mock Workspace Card 2 */}
         <div style={{
