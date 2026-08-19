@@ -394,11 +394,13 @@ export class DocumentsService {
       this.logger.warn(`Could not delete storage file ${document.storageKey} for document ${id}`);
     }
 
-    // Delete from DB (cascade deletes versions/chunks)
-    await this.prisma.document.delete({
-      where: { id }
-    });
-
+    // Delete from DB (manually cascade versions/permissions/chunks since schema doesn't have onDelete: Cascade)
+    await this.prisma.$transaction([
+      this.prisma.documentVersion.deleteMany({ where: { documentId: id } }),
+      this.prisma.documentPermission.deleteMany({ where: { documentId: id } }),
+      this.prisma.documentChunk.deleteMany({ where: { documentId: id } }),
+      this.prisma.document.delete({ where: { id } })
+    ]);
     // Log action
     await this.auditService.logAction(
       document.workspaceId,
