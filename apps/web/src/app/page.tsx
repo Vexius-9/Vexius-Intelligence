@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
+import { IsometricStack } from "@/components/ui/IsometricStack";
 import Link from "next/link";
 
 export default function Home() {
@@ -52,64 +53,78 @@ export default function Home() {
           style={{
             minHeight: "100vh",
             display: "flex",
-            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
             padding: "160px 24px 80px 24px",
-            textAlign: "center",
+            width: "100%",
+            maxWidth: "1200px",
           }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            style={{ maxWidth: "800px", width: "100%" }}
-          >
-            <div
-              style={{
-                display: "inline-block",
-                padding: "4px 12px",
-                borderRadius: "100px",
-                border: "1px solid var(--border-color)",
-                background: "rgba(255,255,255,0.02)",
-                fontSize: "0.85rem",
-                color: "var(--text-secondary)",
-                marginBottom: "32px",
-                letterSpacing: "-0.01em",
-              }}
+          <div style={{ display: "flex", flexWrap: "wrap", width: "100%", gap: "64px", alignItems: "center" }}>
+            
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              style={{ flex: "1 1 400px", textAlign: "left" }}
             >
-              Introducing Vexius Engine 2.0
-            </div>
-            
-            <h1 className="heading-hero" style={{ marginBottom: "24px" }}>
-              Document collaboration, <br />
-              engineered for speed.
-            </h1>
-            
-            <p
-              style={{
-                fontSize: "1.1rem",
-                color: "var(--text-secondary)",
-                lineHeight: 1.6,
-                marginBottom: "48px",
-                maxWidth: "500px",
-                margin: "0 auto 48px auto",
-                letterSpacing: "-0.01em",
-              }}
+              <div
+                style={{
+                  display: "inline-block",
+                  padding: "4px 12px",
+                  borderRadius: "100px",
+                  border: "1px solid var(--border-color)",
+                  background: "rgba(255,255,255,0.02)",
+                  fontSize: "0.85rem",
+                  color: "var(--text-secondary)",
+                  marginBottom: "32px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Introducing Vexius Engine 2.0
+              </div>
+              
+              <h1 className="heading-hero" style={{ marginBottom: "24px", textAlign: "left" }}>
+                Document collaboration, <br />
+                engineered for speed.
+              </h1>
+              
+              <p
+                style={{
+                  fontSize: "1.1rem",
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.6,
+                  marginBottom: "48px",
+                  maxWidth: "500px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Vexius brings deep reasoning directly into your workspace. No context switching, just seamless AI integration.
+              </p>
+              
+              <div style={{ display: "flex", gap: "16px", justifyContent: "flex-start" }}>
+                <button className="btn-primary">
+                  Start Building
+                  <ChevronRight size={16} />
+                </button>
+                <button className="btn-secondary">
+                  Documentation
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Right Content - Isometric Stack */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              style={{ flex: "1 1 400px", display: "flex", justifyContent: "center" }}
             >
-              Vexius brings deep reasoning directly into your workspace. No context switching, just seamless AI integration.
-            </p>
-            
-            <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-              <button className="btn-primary">
-                Start Building
-                <ChevronRight size={16} />
-              </button>
-              <button className="btn-secondary">
-                Documentation
-              </button>
-            </div>
-          </motion.div>
+              <IsometricStack />
+            </motion.div>
+
+          </div>
         </section>
 
         {/* Features Section */}
