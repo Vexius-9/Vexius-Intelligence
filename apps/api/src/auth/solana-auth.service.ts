@@ -64,17 +64,24 @@ export class SolanaAuthService {
         throw new UnauthorizedException('Invalid signature');
       }
 
-      // Check token balance
-      const hasEnoughTokens = await this.checkTokenBalance(publicKey);
-      if (!hasEnoughTokens) {
-        throw new UnauthorizedException('Access Denied: You do not hold enough Vexius tokens (min. 1% supply).');
+      // Check if wallet is a developer wallet
+      const devWalletsStr = this.configService.get<string>('DEVELOPER_WALLET_ADDRESSES');
+      const devWallets = devWalletsStr ? devWalletsStr.split(',').map(w => w.trim()) : [];
+      const isDeveloper = devWallets.includes(walletAddress);
+
+      if (!isDeveloper) {
+        // Check token balance for normal users
+        const hasEnoughTokens = await this.checkTokenBalance(publicKey);
+        if (!hasEnoughTokens) {
+          throw new UnauthorizedException('Access Denied: You do not hold enough Vexius tokens (min. 1% supply).');
+        }
       }
 
       // Clear the nonce so it can't be reused
       this.nonces.delete(walletAddress);
 
       // Issue JWT
-      const payload = { sub: walletAddress, role: 'holder' };
+      const payload = { sub: walletAddress, role: isDeveloper ? 'developer' : 'holder' };
       return {
         access_token: this.jwtService.sign(payload),
       };
