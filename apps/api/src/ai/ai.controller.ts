@@ -2,6 +2,7 @@ import { Controller, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Readable } from 'stream';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
@@ -31,7 +32,6 @@ export class AiController {
     
     let webResponse;
     try {
-      // We stream the standard Response object directly to fastify reply
       webResponse = await this.aiService.chatStream(
         body.messages,
         providerModelId,
@@ -42,29 +42,16 @@ export class AiController {
       return res.status(500).send({ statusCode: 500, message: err.message || 'Internal server error', details: err.toString() });
     }
 
-    // Fastify handling for standard Web Response (from Vercel AI SDK)
-    res.raw.setHeader('Content-Type', webResponse.headers.get('Content-Type') || 'text/event-stream');
-    res.raw.setHeader('Cache-Control', 'no-cache');
-    res.raw.setHeader('Connection', 'keep-alive');
+    // Delegate streaming to Fastify so it properly applies CORS hooks
+    res.header('Content-Type', webResponse.headers.get('Content-Type') || 'text/event-stream');
+    res.header('Cache-Control', 'no-cache');
+    res.header('Connection', 'keep-alive');
 
     if (webResponse.body) {
-      const reader = webResponse.body.getReader();
-      const push = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.raw.write(value);
-          }
-        } catch (err) {
-          console.error('Error streaming AI response:', err);
-        } finally {
-          res.raw.end();
-        }
-      };
-      push();
+      const nodeStream = Readable.fromWeb(webResponse.body as any);
+      return res.send(nodeStream);
     } else {
-      res.raw.end();
+      return res.send('');
     }
   }
 }
