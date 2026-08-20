@@ -6,7 +6,8 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Check } from "lucide-react";
 import { DocumentEditor } from "@onlyoffice/document-editor-react";
 
-export default function DocumentPage({ params }: { params: { workspaceId: string; docId: string } }) {
+export default function DocumentPage({ params }: { params: Promise<{ workspaceId: string; docId: string }> }) {
+  const unwrappedParams = React.use(params);
   const [docMetadata, setDocMetadata] = useState<any>(null);
   const [editorConfig, setEditorConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +23,7 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         
         // 1. Fetch metadata
-        const metaRes = await fetch(`${apiUrl}/documents/${params.docId}`, {
+        const metaRes = await fetch(`${apiUrl}/documents/${unwrappedParams.docId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (metaRes.ok) {
@@ -32,7 +33,7 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
         }
 
         // 2. Fetch editor config
-        const confRes = await fetch(`${apiUrl}/documents/${params.docId}/editor-config`, {
+        const confRes = await fetch(`${apiUrl}/documents/${unwrappedParams.docId}/editor-config`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (confRes.ok) {
@@ -46,7 +47,7 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
       }
     };
     initDocument();
-  }, [params.docId]);
+  }, [unwrappedParams.docId]);
 
   const handleRenameSubmit = async () => {
     setIsRenaming(false);
@@ -58,7 +59,7 @@ export default function DocumentPage({ params }: { params: { workspaceId: string
     try {
       const token = localStorage.getItem("vexius_token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/documents/${params.docId}`, {
+      const res = await fetch(`${apiUrl}/documents/${unwrappedParams.docId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
