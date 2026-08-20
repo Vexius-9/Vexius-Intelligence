@@ -22,6 +22,7 @@ export function AICopilot({ documentContext }: AICopilotProps) {
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: `${process.env.NEXT_PUBLIC_API_URL}/ai/chat`,
+    streamProtocol: "text",
     headers: {
       "Authorization": `Bearer ${token}`
     },
