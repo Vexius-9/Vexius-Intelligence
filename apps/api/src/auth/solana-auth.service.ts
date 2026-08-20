@@ -28,8 +28,8 @@ export class SolanaAuthService {
     if (!tokenAddress) throw new Error('VEXIUS_TOKEN_ADDRESS must be defined');
     this.VEXIUS_TOKEN_ADDRESS = tokenAddress;
 
-    const minSupply = this.configService.get<number>('MIN_SUPPLY_REQUIRED');
-    if (!minSupply) throw new Error('MIN_SUPPLY_REQUIRED must be defined');
+    const minSupply = this.configService.get<number | string>('MIN_SUPPLY_REQUIRED');
+    if (minSupply === undefined || minSupply === null || minSupply === '') throw new Error('MIN_SUPPLY_REQUIRED must be defined');
     this.MIN_SUPPLY_REQUIRED = Number(minSupply);
   }
 
