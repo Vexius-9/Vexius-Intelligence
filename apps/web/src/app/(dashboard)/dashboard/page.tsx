@@ -97,6 +97,11 @@ export default function DashboardPage() {
       
       if (!res.ok) throw new Error("Failed to upload document");
       const newDoc = await res.json();
+      console.log("Upload response:", newDoc);
+      
+      if (!newDoc || !newDoc.id) {
+        throw new Error("Server returned an invalid response (missing ID): " + JSON.stringify(newDoc));
+      }
       
       // Update state and close modal
       setDocuments(docs => [...docs, newDoc]);
