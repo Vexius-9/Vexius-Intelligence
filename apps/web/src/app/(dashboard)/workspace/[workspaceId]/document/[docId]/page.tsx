@@ -182,16 +182,18 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
               <Loader2 className="animate-spin" />
             </div>
-          ) : editorConfig ? (
+          ) : editorConfig && process.env.NEXT_PUBLIC_ONLYOFFICE_URL ? (
             <DocumentEditor
               id="docxEditor"
-              documentServerUrl={process.env.NEXT_PUBLIC_ONLYOFFICE_URL!}
+              documentServerUrl={process.env.NEXT_PUBLIC_ONLYOFFICE_URL}
               config={editorConfig}
               events_onDocumentReady={onDocumentReady}
             />
           ) : (
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
-              Failed to load document editor
+              {!process.env.NEXT_PUBLIC_ONLYOFFICE_URL 
+                ? "Missing NEXT_PUBLIC_ONLYOFFICE_URL in .env" 
+                : "Failed to load document editor"}
             </div>
           )}
         </div>

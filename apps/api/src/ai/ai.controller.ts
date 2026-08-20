@@ -29,12 +29,18 @@ export class AiController {
     // Default to OpenAI GPT-4o if not specified
     const providerModelId = body.model || 'openai:gpt-4o';
     
-    // We stream the standard Response object directly to fastify reply
-    const webResponse = await this.aiService.chatStream(
-      body.messages,
-      providerModelId,
-      enrichedContext
-    );
+    let webResponse;
+    try {
+      // We stream the standard Response object directly to fastify reply
+      webResponse = await this.aiService.chatStream(
+        body.messages,
+        providerModelId,
+        enrichedContext
+      );
+    } catch (err: any) {
+      console.error('AI chatStream error:', err);
+      return res.status(500).send({ statusCode: 500, message: err.message || 'Internal server error', details: err.toString() });
+    }
 
     // Fastify handling for standard Web Response (from Vercel AI SDK)
     res.raw.setHeader('Content-Type', webResponse.headers.get('Content-Type') || 'text/event-stream');
