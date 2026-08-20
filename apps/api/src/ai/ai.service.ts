@@ -133,6 +133,6 @@ export class AiService {
       }
     });
 
-    return result.toDataStreamResponse();
+    return (result as any).toDataStreamResponse ? (result as any).toDataStreamResponse() : result.toTextStreamResponse();
   }
 }
