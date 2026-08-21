@@ -98,11 +98,13 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     }
   };
 
+  // Keep track of the last non-empty text in case focus is lost during click
+  const lastSelectionRef = useRef<string>("");
+
   const getCurrentSelection = (): Promise<string> => {
     return new Promise((resolve) => {
       if (!editorConnector) {
-        console.error("editorConnector is null");
-        resolve("");
+        resolve(lastSelectionRef.current);
         return;
       }
       if (docMetadata?.type === 'pdf') {
@@ -112,22 +114,35 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
       
       let callbackFired = false;
       try {
-        editorConnector.executeMethod("GetSelectedText", [], (text: string) => {
+        editorConnector.executeMethod("GetSelectedText", [], (result: any) => {
           callbackFired = true;
-          console.log("GetSelectedText callback fired with text:", text);
-          resolve(text || "");
+          
+          let text = "";
+          if (typeof result === "string") {
+            text = result;
+          } else if (result && typeof result === "object" && result.text) {
+            text = result.text;
+          } else if (result && typeof result === "object" && result.data) {
+            text = result.data;
+          } else {
+            text = String(result || "");
+          }
+          
+          if (text && text.trim() !== "") {
+            lastSelectionRef.current = text;
+          }
+          
+          // Return the text, or fallback to the last known non-empty selection if focus was just lost
+          resolve(text || lastSelectionRef.current);
         });
         
-        // Fallback timeout in case ONLYOFFICE API fails to invoke callback
         setTimeout(() => {
           if (!callbackFired) {
-            console.error("GetSelectedText callback timed out");
-            resolve("");
+            resolve(lastSelectionRef.current);
           }
-        }, 1000);
+        }, 800);
       } catch (err) {
-        console.error("ONLYOFFICE executeMethod error:", err);
-        resolve("");
+        resolve(lastSelectionRef.current);
       }
     });
   };
