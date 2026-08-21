@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle } from "lucide-react";
+import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle, BarChart } from "lucide-react";
 import { useChat } from "ai/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -137,6 +137,45 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
     }
   };
 
+  const handleRunFinancialAnalyst = async () => {
+    if (!documentContext?.documentId || !documentContext?.workspaceId || !getFullText) return;
+    
+    if (onAiStart) onAiStart();
+    setIsProcessingAction(true);
+    
+    try {
+      const fullText = await getFullText();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/ai/agents/financial-analyst`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          documentId: documentContext.documentId,
+          workspaceId: documentContext.workspaceId,
+          documentContent: fullText
+        })
+      });
+      
+      if (!res.ok) throw new Error("Failed to run agent");
+      const data = await res.json();
+      
+      setMessages([...messages, { 
+        id: Date.now().toString(), 
+        role: 'assistant', 
+        content: `**Financial Analysis Report**\n\n${data.result}` 
+      }]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to run Financial Analyst.");
+    } finally {
+      setIsProcessingAction(false);
+      if (onAiEnd) onAiEnd();
+    }
+  };
+
   const overrideHandleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (getCurrentSelection) {
@@ -218,6 +257,9 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             </button>
             <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('explain_formula'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <CheckCircle size={12} /> Explain Formula
+            </button>
+            <button onMouseDown={(e) => { e.preventDefault(); handleRunFinancialAnalyst(); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(168, 85, 247, 0.1)", border: "1px solid rgba(168, 85, 247, 0.3)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "#a855f7", fontWeight: 600 }}>
+              <BarChart size={12} /> Run Analysis
             </button>
           </>
         ) : documentContext?.documentType === 'presentation' ? (

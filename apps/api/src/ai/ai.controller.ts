@@ -85,13 +85,13 @@ export class AiController {
 
   @Post('agents/financial-analyst')
   async runFinancialAnalyst(
-    @Body() body: { documentId: string; workspaceId: string },
+    @Body() body: { documentId: string; workspaceId: string; documentContent?: string },
     @CurrentUser() user: any
   ) {
     if (!body.documentId || !body.workspaceId) {
       throw new BadRequestException('documentId and workspaceId are required');
     }
-    return this.aiService.runAgent('financial-analyst', body.documentId, body.workspaceId, user.id);
+    return this.aiService.runAgent('financial-analyst', body.documentId, body.workspaceId, user.id, body.documentContent);
   }
 
   @Post('agents/legal-reviewer')

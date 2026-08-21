@@ -1,14 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { VexiusEditorShell } from "@/components/editor/VexiusEditorShell";
-import { VexiusDocEditor } from "@/components/editor/docs/VexiusDocEditor";
+import { VexiusDocEditor, VexiusDocEditorRef } from "@/components/editor/docs/VexiusDocEditor";
+import { VexiusSheetEditor, VexiusSheetEditorRef } from '@/components/editor/sheets/VexiusSheetEditor';
 
 export default function DocumentPage({ params }: { params: Promise<{ workspaceId: string; docId: string }> }) {
   const unwrappedParams = React.use(params);
+  const router = useRouter();
   const [docMetadata, setDocMetadata] = useState<any>(null);
   const [docContent, setDocContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const docEditorRef = useRef<VexiusDocEditorRef>(null);
+  const sheetEditorRef = useRef<VexiusSheetEditorRef>(null);
 
   useEffect(() => {
     const initDocument = async () => {
@@ -64,26 +70,43 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     }
   };
 
-  const docEditorRef = React.useRef<any>(null);
   const [aiStatus, setAiStatus] = useState<'idle' | 'running' | 'success'>('idle');
 
   const getCurrentSelection = async (): Promise<string> => {
-    if (docEditorRef.current && docEditorRef.current.getCurrentSelection) {
-      return docEditorRef.current.getCurrentSelection();
+    if (docMetadata?.type === 'spreadsheet' || docMetadata?.type === 'xlsx') {
+      if (sheetEditorRef.current && sheetEditorRef.current.getCurrentSelection) {
+        return sheetEditorRef.current.getCurrentSelection();
+      }
+    } else {
+      if (docEditorRef.current && docEditorRef.current.getCurrentSelection) {
+        return docEditorRef.current.getCurrentSelection();
+      }
     }
     return "";
   };
 
   const getFullText = async (): Promise<string> => {
-    if (docEditorRef.current && docEditorRef.current.getFullText) {
-      return docEditorRef.current.getFullText();
+    if (docMetadata?.type === 'spreadsheet' || docMetadata?.type === 'xlsx') {
+      if (sheetEditorRef.current && sheetEditorRef.current.getFullText) {
+        return sheetEditorRef.current.getFullText();
+      }
+    } else {
+      if (docEditorRef.current && docEditorRef.current.getFullText) {
+        return docEditorRef.current.getFullText();
+      }
     }
     return "";
   };
 
   const onApplyAction = (newText: string) => {
-    if (docEditorRef.current) {
-      docEditorRef.current.applyAction(newText);
+    if (docMetadata?.type === 'spreadsheet' || docMetadata?.type === 'xlsx') {
+      if (sheetEditorRef.current) {
+        sheetEditorRef.current.applyAction(newText);
+      }
+    } else {
+      if (docEditorRef.current) {
+        docEditorRef.current.applyAction(newText);
+      }
     }
   };
 
@@ -119,7 +142,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
         return <VexiusDocEditor ref={docEditorRef} documentId={docMetadata.id} initialContent={docContent} aiStatus={aiStatus} onRevertAi={onRevertAi} onAcceptAi={onAcceptAi} />;
       case 'spreadsheet':
       case 'xlsx':
-        return <div>Vexius Sheets (Coming Soon)</div>;
+        return <VexiusSheetEditor ref={sheetEditorRef} documentId={docMetadata.id} initialContent={docContent} />;
       default:
         return <div>Unsupported document type</div>;
     }

@@ -236,32 +236,39 @@ export class AiService {
   /**
    * Vexius Agents
    */
-  async runAgent(agentType: 'financial-analyst' | 'legal-reviewer', documentId: string, workspaceId: string, userId: string) {
-    // 1. Fetch document chunks
-    const chunks = await this.prisma.documentChunk.findMany({
-      where: { documentId },
-      orderBy: { id: 'asc' }
-    });
+  async runAgent(agentType: 'financial-analyst' | 'legal-reviewer', documentId: string, workspaceId: string, userId: string, documentContent?: string) {
+    let text = documentContent || "";
+    
+    if (!text || text.trim() === "") {
+      // 1. Fetch document chunks
+      const chunks = await this.prisma.documentChunk.findMany({
+        where: { documentId },
+        orderBy: { id: 'asc' }
+      });
+
+      if (!chunks || chunks.length === 0) {
+        throw new BadRequestException("Document has not been indexed yet or is empty.");
+      }
+      text = chunks.map(c => c.content).join('\n\n');
+    }
 
     const doc = await this.prisma.document.findUnique({ where: { id: documentId }});
     if (!doc) throw new BadRequestException("Document not found");
 
-    if (!chunks || chunks.length === 0) {
-      throw new BadRequestException("Document has not been indexed yet or is empty.");
-    }
-
-    const fullText = chunks.map(c => c.content).join('\n');
-
     let prompt = "";
     let resultFileName = "";
+    let systemPrompt = "";
 
     if (agentType === 'financial-analyst') {
-      prompt = `You are a Senior Financial Analyst. Analyze the following data (extracted from a spreadsheet).
-Provide a structured summary, key insights, identify any trends, and present a concise projection if applicable.
-Format the output as a professional Markdown document.
-
-Data:
-${fullText.substring(0, 50000)} // limit to avoid massive context issues for MVP
+      systemPrompt = `You are a world-class Financial Analyst Agent.
+Your objective is to review the provided financial model or spreadsheet data (often in CSV format) and provide a concise, high-level financial analysis.
+If you find actionable insights, you may suggest updates to the model. To update a cell in the model, output a JSON block like:
+\`\`\`json
+{ "action": "update_cell", "row": 0, "col": 1, "value": 5000 }
+\`\`\`
+Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid.`;
+      prompt = `Analyze the following data:
+${text.substring(0, 50000)}
 `;
       resultFileName = `Financial Analysis - ${doc.name}.md`;
     } else if (agentType === 'legal-reviewer') {
@@ -270,7 +277,7 @@ Identify any potential conflicts of interest, liabilities, missing standard clau
 Format the output as a professional Markdown document with clear headings and bullet points.
 
 Text:
-${fullText.substring(0, 50000)}
+${text.substring(0, 50000)}
 `;
       resultFileName = `Legal Review - ${doc.name}.md`;
     }
@@ -281,6 +288,7 @@ ${fullText.substring(0, 50000)}
 
     const result = await generateText({
       model,
+      system: systemPrompt ? systemPrompt : undefined,
       prompt,
     });
 
