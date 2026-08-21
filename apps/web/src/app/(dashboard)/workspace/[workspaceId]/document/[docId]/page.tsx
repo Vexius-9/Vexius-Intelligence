@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AICopilot } from "@/components/ai/AICopilot";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Check, Bot } from "lucide-react";
 import { DocumentEditor } from "@onlyoffice/document-editor-react";
 
 export default function DocumentPage({ params }: { params: Promise<{ workspaceId: string; docId: string }> }) {
@@ -15,6 +15,9 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
   // Renaming state
   const [isRenaming, setIsRenaming] = useState(false);
   const [editName, setEditName] = useState("");
+
+  // Copilot visibility state
+  const [isCopilotVisible, setIsCopilotVisible] = useState(true);
 
   useEffect(() => {
     const initDocument = async () => {
@@ -217,8 +220,28 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
             </span>
           )}
         </div>
-        
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "12px" }}>
+          <button 
+            onClick={() => setIsCopilotVisible(!isCopilotVisible)}
+            style={{
+              background: isCopilotVisible ? "rgba(168, 85, 247, 0.1)" : "transparent",
+              color: isCopilotVisible ? "#a855f7" : "var(--text-secondary)",
+              border: `1px solid ${isCopilotVisible ? "rgba(168, 85, 247, 0.2)" : "var(--border-color)"}`,
+              padding: "6px 12px",
+              borderRadius: "6px",
+              fontWeight: 500,
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "all 0.2s"
+            }}
+          >
+            <Bot size={16} />
+            {isCopilotVisible ? "Hide Copilot" : "Show Copilot"}
+          </button>
+          
           <button style={{
             background: "#fff",
             color: "#000",
@@ -260,16 +283,18 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
         </div>
 
         {/* AI Copilot Sidebar */}
-        <AICopilot 
-          documentContext={{
-            documentTitle: docMetadata?.name || "Untitled Document",
-            workspaceId: unwrappedParams.workspaceId,
-            documentId: unwrappedParams.docId,
-            documentType: docMetadata?.type
-          }}
-          getCurrentSelection={getCurrentSelection}
-          onApplyAction={onApplyAction}
-        />
+        <div style={{ display: isCopilotVisible ? 'flex' : 'none', flexShrink: 0 }}>
+          <AICopilot 
+            documentContext={{
+              documentTitle: docMetadata?.name || "Untitled Document",
+              workspaceId: unwrappedParams.workspaceId,
+              documentId: unwrappedParams.docId,
+              documentType: docMetadata?.type
+            }}
+            getCurrentSelection={getCurrentSelection}
+            onApplyAction={onApplyAction}
+          />
+        </div>
 
       </div>
     </div>
