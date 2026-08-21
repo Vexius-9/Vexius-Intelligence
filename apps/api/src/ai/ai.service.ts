@@ -152,6 +152,34 @@ export class AiService {
       });
       if (chunks.length > 0) {
         text = chunks.map(c => c.content).join('\n\n');
+      } else {
+        // Fallback: If no chunks, fetch from storage and parse on the fly
+        const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+        if (doc && doc.storageKey) {
+          const { StorageClient } = await import('@vexius/storage');
+          const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || '';
+          const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') || '';
+          const storageClient = new StorageClient(supabaseUrl, supabaseKey);
+          
+          try {
+            const fileBuffer = await storageClient.downloadFile('vexius-documents', doc.storageKey);
+            if (doc.type === 'pdf') {
+              // pdf-parse is CommonJS, so we need .default when dynamically imported
+              const pdfParseModule = await Function('return import("pdf-parse")')();
+              const pdfParse = pdfParseModule.default || pdfParseModule;
+              const pdfData = await pdfParse(fileBuffer);
+              text = pdfData.text;
+            } else if (doc.type === 'document' || doc.type === 'spreadsheet' || doc.type === 'presentation') {
+              const officeParser = await Function('return import("officeparser")')();
+              text = await officeParser.parseOfficeAsync(fileBuffer);
+            }
+          } catch (e) {
+            this.logger.error(`Failed to parse document on the fly: ${e.message}`, e);
+          }
+        }
+      }
+
+      if (text) {
         // Truncate to ~200,000 characters to prevent massive context overflow for standard inline models
         if (text.length > 200000) {
           text = text.substring(0, 200000) + '... [Document truncated due to length]';

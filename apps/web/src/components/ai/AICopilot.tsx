@@ -28,7 +28,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
     setToken(localStorage.getItem("vexius_token") || "");
   }, []);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
     api: `${process.env.NEXT_PUBLIC_API_URL}/ai/chat`,
     streamProtocol: "text",
     headers: {
@@ -86,7 +86,11 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
       // For explain or PDF actions, we don't want to replace text in document
       // We want to just output it in the chat.
       if (action === 'explain_formula' || action === 'summarize_pdf') {
-        append({ role: 'assistant', content: `**${action === 'explain_formula' ? 'Formula Explanation' : 'PDF Summary'}**\n\n${data.result}` });
+        setMessages([...messages, { 
+          id: Date.now().toString(), 
+          role: 'assistant', 
+          content: `**${action === 'explain_formula' ? 'Formula Explanation' : 'PDF Summary'}**\n\n${data.result}` 
+        }]);
       } else {
         onApplyAction(data.result);
       }

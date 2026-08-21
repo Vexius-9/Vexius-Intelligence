@@ -101,6 +101,12 @@ export class DocumentsService {
         return doc;
       });
 
+      // Trigger background indexing for the newly uploaded document
+      await this.documentIndexingQueue.add('index', {
+        documentId: document.id,
+        workspaceId,
+      });
+
       return document;
     } catch (error) {
       this.logger.error('Failed to upload document', error);

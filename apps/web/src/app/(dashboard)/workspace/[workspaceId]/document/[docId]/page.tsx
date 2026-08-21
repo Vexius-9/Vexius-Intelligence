@@ -100,13 +100,18 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
 
   const getCurrentSelection = (): Promise<string> => {
     return new Promise((resolve) => {
-      if (!editorConnector) {
+      if (!editorConnector || docMetadata?.type === 'pdf') {
         resolve("");
         return;
       }
-      editorConnector.executeMethod("GetSelectedText", [], (text: string) => {
-        resolve(text || "");
-      });
+      try {
+        editorConnector.executeMethod("GetSelectedText", [], (text: string) => {
+          resolve(text || "");
+        });
+      } catch (err) {
+        console.error("ONLYOFFICE executeMethod error:", err);
+        resolve("");
+      }
     });
   };
 
