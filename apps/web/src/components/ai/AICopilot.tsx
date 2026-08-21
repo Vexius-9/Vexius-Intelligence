@@ -5,6 +5,7 @@ import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle } from "luci
 import { useChat } from "ai/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "react-hot-toast";
 
 interface AICopilotProps {
   documentContext?: {
@@ -45,7 +46,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
 
   const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf') => {
     if (!getCurrentSelection || !onApplyAction) {
-      alert("Inline actions are not available in this context.");
+      toast.error("Inline actions are not available in this context.");
       return;
     }
 
@@ -59,9 +60,17 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
         }
       }
       
-      // If we don't have text, AND we don't have a documentId to fallback on the backend, then alert.
+      // For grammar, rewrite, and formula generation, text is absolutely REQUIRED.
+      // If it's empty, we must not fallback to document content because it will replace the user's document!
+      if ((!text || text.trim() === "") && ['grammar', 'rewrite', 'generate_formula'].includes(action)) {
+        toast.error("Please block/select the text you want to use for this action.");
+        setIsProcessingAction(false);
+        return;
+      }
+
+      // General fallback if text is still empty and we have no documentId
       if ((!text || text.trim() === "") && !documentContext?.documentId) {
-        alert("Please select some text in the document first or ensure the document has content.");
+        toast.error("Please select some text in the document first or ensure the document has content.");
         setIsProcessingAction(false);
         return;
       }
@@ -96,7 +105,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to execute action.");
+      toast.error("Failed to execute action.");
     } finally {
       setIsProcessingAction(false);
     }
@@ -170,38 +179,42 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
       }}>
         {documentContext?.documentType === 'spreadsheet' ? (
           <>
-            <button onClick={() => handleInlineAction('generate_formula')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('generate_formula'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <Sparkles size={12} /> Generate Formula
             </button>
-            <button onClick={() => handleInlineAction('explain_formula')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('explain_formula'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <CheckCircle size={12} /> Explain Formula
             </button>
           </>
         ) : documentContext?.documentType === 'presentation' ? (
           <>
-            <button onClick={() => handleInlineAction('slide_structure')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('slide_structure'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <Sparkles size={12} /> Structure Slide
             </button>
-            <button onClick={() => handleInlineAction('summarize')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('summarize'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <Type size={12} /> Summarize Slide
             </button>
           </>
         ) : documentContext?.documentType === 'pdf' ? (
-          <button onClick={() => handleInlineAction('summarize_pdf')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+          <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('summarize_pdf'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
             <Type size={12} /> Summarize PDF
           </button>
-        ) : (
+        ) : documentContext?.documentType === 'document' ? (
           <>
-            <button onClick={() => handleInlineAction('rewrite')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('rewrite'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <Edit3 size={12} /> Rewrite
             </button>
-            <button onClick={() => handleInlineAction('summarize')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('summarize'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <Type size={12} /> Summarize
             </button>
-            <button onClick={() => handleInlineAction('grammar')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('grammar'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
               <CheckCircle size={12} /> Fix Grammar
             </button>
           </>
+        ) : (
+          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
+            Loading AI actions...
+          </div>
         )}
       </div>
 
