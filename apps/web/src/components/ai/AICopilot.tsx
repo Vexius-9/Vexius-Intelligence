@@ -18,9 +18,11 @@ interface AICopilotProps {
   };
   getCurrentSelection?: () => Promise<string>;
   onApplyAction?: (text: string) => void;
+  onAiStart?: () => void;
+  onAiEnd?: () => void;
 }
 
-export function AICopilot({ documentContext, getCurrentSelection, onApplyAction }: AICopilotProps) {
+export function AICopilot({ documentContext, getCurrentSelection, onApplyAction, onAiStart, onAiEnd }: AICopilotProps) {
   const [selectedModel, setSelectedModel] = useState<string>("openai:gpt-4o");
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
@@ -66,6 +68,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
     }
 
     try {
+      if (onAiStart) onAiStart();
       setIsProcessingAction(true);
       let text = await getCurrentSelection();
       
@@ -83,6 +86,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
         if ((!text || text.trim() === "") && ['grammar', 'rewrite', 'generate_formula'].includes(action)) {
           toast.error("ONLYOFFICE membatasi akses teks dari luar. Silakan gunakan tab 'Plugins' -> 'ChatGPT/AI' bawaan ONLYOFFICE di toolbar atas untuk aksi ini (Anda bisa memasukkan API Key di sana).", { duration: 6000 });
           setIsProcessingAction(false);
+          if (onAiEnd) onAiEnd();
           return;
         }
       }
@@ -91,6 +95,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
       if ((!text || text.trim() === "") && !documentContext?.documentId) {
         toast.error("Please select some text in the document first or ensure the document has content.");
         setIsProcessingAction(false);
+        if (onAiEnd) onAiEnd();
         return;
       }
 
@@ -127,6 +132,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
       toast.error("Failed to execute action.");
     } finally {
       setIsProcessingAction(false);
+      if (onAiEnd) onAiEnd();
     }
   };
 

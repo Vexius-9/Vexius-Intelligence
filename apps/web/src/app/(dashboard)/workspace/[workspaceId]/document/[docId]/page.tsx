@@ -65,6 +65,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
   };
 
   const docEditorRef = React.useRef<any>(null);
+  const [aiStatus, setAiStatus] = useState<'idle' | 'running' | 'success'>('idle');
 
   const getCurrentSelection = async (): Promise<string> => {
     if (docEditorRef.current) {
@@ -79,6 +80,28 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     }
   };
 
+  const onAiStart = () => {
+    setAiStatus('running');
+    if (docEditorRef.current && docEditorRef.current.snapshotStateForAI) {
+      docEditorRef.current.snapshotStateForAI();
+    }
+  };
+
+  const onAiEnd = () => {
+    setAiStatus('success');
+  };
+
+  const onRevertAi = () => {
+    if (docEditorRef.current && docEditorRef.current.revertAIAction) {
+      docEditorRef.current.revertAIAction();
+    }
+    setAiStatus('idle');
+  };
+
+  const onAcceptAi = () => {
+    setAiStatus('idle');
+  };
+
   const renderEditor = () => {
     if (!docMetadata) return null;
     
@@ -86,7 +109,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     switch (docMetadata.type) {
       case 'document':
       case 'docx':
-        return <VexiusDocEditor ref={docEditorRef} documentId={docMetadata.id} initialContent={docContent} />;
+        return <VexiusDocEditor ref={docEditorRef} documentId={docMetadata.id} initialContent={docContent} aiStatus={aiStatus} onRevertAi={onRevertAi} onAcceptAi={onAcceptAi} />;
       case 'spreadsheet':
       case 'xlsx':
         return <div>Vexius Sheets (Coming Soon)</div>;
@@ -105,6 +128,8 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
       loading={loading}
       getCurrentSelection={getCurrentSelection}
       onApplyAction={onApplyAction}
+      onAiStart={onAiStart}
+      onAiEnd={onAiEnd}
     >
       {renderEditor()}
     </VexiusEditorShell>

@@ -8,16 +8,22 @@ import { Bold, Italic, Type, Quote, Code, Undo2, Redo2, Heading1, Heading2, Head
 export interface VexiusDocEditorProps {
   documentId: string;
   initialContent?: any;
+  aiStatus?: 'idle' | 'running' | 'success';
+  onRevertAi?: () => void;
+  onAcceptAi?: () => void;
 }
 
 export interface VexiusDocEditorRef {
   getCurrentSelection: () => string;
   applyAction: (text: string) => void;
+  snapshotStateForAI: () => void;
+  revertAIAction: () => void;
 }
 
-export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorProps>(({ documentId, initialContent }, ref) => {
+export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorProps>(({ documentId, initialContent, aiStatus, onRevertAi, onAcceptAi }, ref) => {
   const editorRef = useRef<ProseMirrorEditorRef>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const aiSnapshotRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
     getCurrentSelection: () => {
@@ -34,6 +40,17 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
       const tr = state.tr.replaceSelectionWith(state.schema.text(text));
       tr.setMeta("vexius", { source: "ai" });
       dispatch(tr);
+    },
+    snapshotStateForAI: () => {
+      const view = editorRef.current?.view;
+      if (!view) return;
+      aiSnapshotRef.current = view.state;
+    },
+    revertAIAction: () => {
+      const view = editorRef.current?.view;
+      if (!view || !aiSnapshotRef.current) return;
+      view.updateState(aiSnapshotRef.current);
+      aiSnapshotRef.current = null;
     }
   }));
 
@@ -57,8 +74,67 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      {/* Editor Toolbar */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', position: 'relative' }}>
+      {/* AI Activity Panel */}
+      {aiStatus && aiStatus !== 'idle' && (
+        <div style={{
+          position: 'absolute',
+          top: '16px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 50,
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontSize: '0.9rem',
+          color: 'var(--text-primary)'
+        }}>
+          {aiStatus === 'running' && (
+            <>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <span style={{ 
+                  display: "inline-block",
+                  width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7",
+                  animation: "pulse 1.5s infinite"
+                }} />
+                AI is writing...
+              </div>
+            </>
+          )}
+          {aiStatus === 'success' && (
+            <>
+              <span style={{ color: "#22c55e" }}>AI finished writing.</span>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={onRevertAi} style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}>Revert</button>
+                <button onClick={onAcceptAi} style={{
+                  background: '#a855f7',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}>Accept</button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Standard Toolbar */}
       <div style={{
         display: 'flex',
         padding: '8px 16px',

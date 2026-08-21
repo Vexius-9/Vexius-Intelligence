@@ -13,6 +13,8 @@ interface VexiusEditorShellProps {
   children: React.ReactNode;
   getCurrentSelection: () => Promise<string>;
   onApplyAction: (newText: string) => void;
+  onAiStart?: () => void;
+  onAiEnd?: () => void;
 }
 
 export function VexiusEditorShell({
@@ -24,7 +26,9 @@ export function VexiusEditorShell({
   loading,
   children,
   getCurrentSelection,
-  onApplyAction
+  onApplyAction,
+  onAiStart,
+  onAiEnd
 }: VexiusEditorShellProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [editName, setEditName] = useState(documentName);
@@ -179,6 +183,8 @@ export function VexiusEditorShell({
             }}
             getCurrentSelection={getCurrentSelection}
             onApplyAction={onApplyAction}
+            onAiStart={onAiStart}
+            onAiEnd={onAiEnd}
           />
         </div>
 
