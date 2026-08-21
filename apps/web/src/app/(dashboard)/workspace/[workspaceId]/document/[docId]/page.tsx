@@ -7,6 +7,7 @@ import { VexiusDocEditor } from "@/components/editor/docs/VexiusDocEditor";
 export default function DocumentPage({ params }: { params: Promise<{ workspaceId: string; docId: string }> }) {
   const unwrappedParams = React.use(params);
   const [docMetadata, setDocMetadata] = useState<any>(null);
+  const [docContent, setDocContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +22,15 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
         if (metaRes.ok) {
           const data = await metaRes.json();
           setDocMetadata(data);
+          
+          if (data.type === 'document' || data.type === 'docx') {
+            const contentRes = await fetch(`${apiUrl}/documents/${unwrappedParams.docId}/json`, {
+              headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (contentRes.ok) {
+              setDocContent(await contentRes.json());
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to load document", err);
@@ -76,7 +86,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     switch (docMetadata.type) {
       case 'document':
       case 'docx':
-        return <VexiusDocEditor ref={docEditorRef} documentId={docMetadata.id} />;
+        return <VexiusDocEditor ref={docEditorRef} documentId={docMetadata.id} initialContent={docContent} />;
       case 'spreadsheet':
       case 'xlsx':
         return <div>Vexius Sheets (Coming Soon)</div>;

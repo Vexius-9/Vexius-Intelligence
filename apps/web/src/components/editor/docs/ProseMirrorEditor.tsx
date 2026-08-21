@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { EditorState, Transaction } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
-import { Schema } from 'prosemirror-model';
+import { Schema, Node } from 'prosemirror-model';
 import { keymap } from 'prosemirror-keymap';
 import { baseKeymap } from 'prosemirror-commands';
 import { history, undo, redo } from 'prosemirror-history';
@@ -37,8 +37,10 @@ export const ProseMirrorEditor = forwardRef<ProseMirrorEditorRef, ProseMirrorEdi
       // Initialize state
       let state: EditorState;
       try {
+        const doc = initialContent ? Node.fromJSON(schema, initialContent) : undefined;
         state = EditorState.create({
           schema,
+          doc,
           plugins: [
             history(),
             keymap({

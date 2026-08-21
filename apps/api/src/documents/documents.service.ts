@@ -170,6 +170,34 @@ export class DocumentsService {
     }
   }
 
+  async getDocumentJson(documentId: string, userId: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId }
+    });
+
+    if (!document) throw new NotFoundException('Document not found');
+
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: document.workspaceId, userId } }
+    });
+
+    if (!membership) throw new NotFoundException('Access denied');
+
+    try {
+      // Download the JSON file from Supabase Storage using the service role client
+      const fileBlob = await this.storageClient.downloadFile('vexius-documents', document.storageKey);
+      const text = fileBlob.toString('utf-8');
+      return JSON.parse(text);
+    } catch (error) {
+      this.logger.error(`Failed to download JSON for document ${documentId}`, error);
+      // Fallback to empty ProseMirror state if download fails
+      return {
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }]
+      };
+    }
+  }
+
   async createBlankDocument(userId: string, workspaceId: string, name: string, docType: 'document' | 'spreadsheet' | 'presentation' | 'folder' = 'document', parentId?: string) {
     // 1. Verify membership
     const membership = await this.prisma.workspaceMember.findUnique({
@@ -222,10 +250,21 @@ export class DocumentsService {
       mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
       extension = 'pptx';
     } else {
-      const { EMPTY_DOCX } = require('./templates');
-      fileBuffer = Buffer.from(EMPTY_DOCX, 'base64');
-      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      extension = 'docx';
+      // Vexius Docs (ProseMirror JSON)
+      const defaultState = {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { type: "text", text: "Start writing..." }
+            ]
+          }
+        ]
+      };
+      fileBuffer = Buffer.from(JSON.stringify(defaultState), 'utf-8');
+      mimeType = 'application/json';
+      extension = 'json';
     }
 
     // Ensure name has the correct extension if not provided
@@ -310,7 +349,7 @@ export class DocumentsService {
       // To keep it simple, we overwrite the current version.
       const storagePath = document.storageKey;
       
-      await this.storageClient.uploadFile('vexius-documents', storagePath, fileBuffer, 'text/html');
+      await this.storageClient.uploadFile('vexius-documents', storagePath, fileBuffer, document.mimeType);
 
       const updatedDoc = await this.prisma.document.update({
         where: { id: document.id },

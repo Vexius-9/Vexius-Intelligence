@@ -1,8 +1,9 @@
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import { ProseMirrorEditor, ProseMirrorEditorRef } from './ProseMirrorEditor';
 import { vexiusSchema } from '@/lib/docs/schema';
-import { toggleMark, setBlockType } from 'prosemirror-commands';
-import { Bold, Italic, Type, List, ListOrdered } from 'lucide-react';
+import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
+import { undo, redo } from 'prosemirror-history';
+import { Bold, Italic, Type, Quote, Code, Undo2, Redo2, Heading1, Heading2, Heading3 } from 'lucide-react';
 
 export interface VexiusDocEditorProps {
   documentId: string;
@@ -16,6 +17,7 @@ export interface VexiusDocEditorRef {
 
 export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorProps>(({ documentId, initialContent }, ref) => {
   const editorRef = useRef<ProseMirrorEditorRef>(null);
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useImperativeHandle(ref, () => ({
     getCurrentSelection: () => {
@@ -66,6 +68,23 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
         alignItems: 'center'
       }}>
         <button 
+          onClick={() => execCommand(undo)}
+          style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
+          title="Undo"
+        >
+          <Undo2 size={18} />
+        </button>
+        <button 
+          onClick={() => execCommand(redo)}
+          style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
+          title="Redo"
+        >
+          <Redo2 size={18} />
+        </button>
+
+        <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 8px' }} />
+
+        <button 
           onClick={() => execCommand(toggleMark(vexiusSchema.marks.strong))}
           style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
           title="Bold"
@@ -79,6 +98,13 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
         >
           <Italic size={18} />
         </button>
+        <button 
+          onClick={() => execCommand(toggleMark(vexiusSchema.marks.code))}
+          style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
+          title="Code"
+        >
+          <Code size={18} />
+        </button>
         
         <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 8px' }} />
 
@@ -87,14 +113,38 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
           style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
           title="Heading 1"
         >
-          <Type size={18} />
+          <Heading1 size={18} />
+        </button>
+        <button 
+          onClick={() => execCommand(setBlockType(vexiusSchema.nodes.heading, { level: 2 }))}
+          style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
+          title="Heading 2"
+        >
+          <Heading2 size={18} />
+        </button>
+        <button 
+          onClick={() => execCommand(setBlockType(vexiusSchema.nodes.heading, { level: 3 }))}
+          style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
+          title="Heading 3"
+        >
+          <Heading3 size={18} />
         </button>
         <button 
           onClick={() => execCommand(setBlockType(vexiusSchema.nodes.paragraph))}
           style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
           title="Paragraph"
         >
-          <Type size={14} />
+          <Type size={18} />
+        </button>
+
+        <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 8px' }} />
+
+        <button 
+          onClick={() => execCommand(wrapIn(vexiusSchema.nodes.blockquote))}
+          style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', borderRadius: '4px' }}
+          title="Blockquote"
+        >
+          <Quote size={18} />
         </button>
       </div>
 
@@ -122,7 +172,24 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
             schema={vexiusSchema}
             initialContent={initialContent}
             onChange={(state) => {
-              // Autosave trigger can go here later
+              if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+              autosaveTimerRef.current = setTimeout(async () => {
+                try {
+                  const token = localStorage.getItem("vexius_token");
+                  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+                  await fetch(`${apiUrl}/documents/${documentId}/content`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content: JSON.stringify(state.doc.toJSON()) })
+                  });
+                  console.log("Autosaved successfully");
+                } catch (e) {
+                  console.error("Autosave failed", e);
+                }
+              }, 2000);
             }}
           />
         </div>

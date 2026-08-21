@@ -78,6 +78,15 @@ export class DocumentsController {
     return this.documentsService.getDocumentDownloadUrl(id, user.id);
   }
 
+  @Get(':id/json')
+  @UseGuards(JwtAuthGuard)
+  async getDocumentJson(
+    @Param('id') id: string,
+    @CurrentUser() user: any
+  ) {
+    return this.documentsService.getDocumentJson(id, user.id);
+  }
+
   @Post(':id/content')
   @UseGuards(JwtAuthGuard)
   async saveDocumentContent(
