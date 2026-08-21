@@ -59,6 +59,9 @@ export class AiService {
       if (context.documentTitle) {
         prompt += `\nCurrent Document Title: ${context.documentTitle}`;
       }
+      if (context.documentContent) {
+        prompt += `\n\n--- CURRENT DOCUMENT CONTENT ---\n${context.documentContent}\n--------------------------------\n\n`;
+      }
       if (context.selectedText) {
         prompt += `\nThe user has currently selected the following text: "${context.selectedText}"`;
       }

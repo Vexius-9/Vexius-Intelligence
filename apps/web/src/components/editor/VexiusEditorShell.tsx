@@ -12,6 +12,7 @@ interface VexiusEditorShellProps {
   loading: boolean;
   children: React.ReactNode;
   getCurrentSelection: () => Promise<string>;
+  getFullText?: () => Promise<string>;
   onApplyAction: (newText: string) => void;
   onAiStart?: () => void;
   onAiEnd?: () => void;
@@ -26,6 +27,7 @@ export function VexiusEditorShell({
   loading,
   children,
   getCurrentSelection,
+  getFullText,
   onApplyAction,
   onAiStart,
   onAiEnd
@@ -182,6 +184,7 @@ export function VexiusEditorShell({
               documentType: documentType
             }}
             getCurrentSelection={getCurrentSelection}
+            getFullText={getFullText}
             onApplyAction={onApplyAction}
             onAiStart={onAiStart}
             onAiEnd={onAiEnd}

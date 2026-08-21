@@ -68,8 +68,15 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
   const [aiStatus, setAiStatus] = useState<'idle' | 'running' | 'success'>('idle');
 
   const getCurrentSelection = async (): Promise<string> => {
-    if (docEditorRef.current) {
+    if (docEditorRef.current && docEditorRef.current.getCurrentSelection) {
       return docEditorRef.current.getCurrentSelection();
+    }
+    return "";
+  };
+
+  const getFullText = async (): Promise<string> => {
+    if (docEditorRef.current && docEditorRef.current.getFullText) {
+      return docEditorRef.current.getFullText();
     }
     return "";
   };
@@ -127,6 +134,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
       onRename={handleRename}
       loading={loading}
       getCurrentSelection={getCurrentSelection}
+      getFullText={getFullText}
       onApplyAction={onApplyAction}
       onAiStart={onAiStart}
       onAiEnd={onAiEnd}

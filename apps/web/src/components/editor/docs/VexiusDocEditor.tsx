@@ -1,9 +1,9 @@
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useState } from 'react';
 import { ProseMirrorEditor, ProseMirrorEditorRef } from './ProseMirrorEditor';
 import { vexiusSchema } from '@/lib/docs/schema';
 import { toggleMark, setBlockType, wrapIn } from 'prosemirror-commands';
 import { undo, redo } from 'prosemirror-history';
-import { Bold, Italic, Type, Quote, Code, Undo2, Redo2, Heading1, Heading2, Heading3 } from 'lucide-react';
+import { Bold, Italic, Type, Quote, Code, Undo2, Redo2, Heading1, Heading2, Heading3, Sparkles } from 'lucide-react';
 
 export interface VexiusDocEditorProps {
   documentId: string;
@@ -15,6 +15,7 @@ export interface VexiusDocEditorProps {
 
 export interface VexiusDocEditorRef {
   getCurrentSelection: () => string;
+  getFullText: () => string;
   applyAction: (text: string) => void;
   snapshotStateForAI: () => void;
   revertAIAction: () => void;
@@ -24,6 +25,10 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
   const editorRef = useRef<ProseMirrorEditorRef>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const aiSnapshotRef = useRef<any>(null);
+  const [slashMenuPos, setSlashMenuPos] = useState<{ top: number, left: number } | null>(null);
+  const [slashQuery, setSlashQuery] = useState("");
+  const [showAiInput, setShowAiInput] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
 
   useImperativeHandle(ref, () => ({
     getCurrentSelection: () => {
@@ -32,6 +37,11 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
       const { from, to } = state.selection;
       if (from === to) return "";
       return state.doc.textBetween(from, to, "\n");
+    },
+    getFullText: () => {
+      const state = editorRef.current?.state;
+      if (!state) return "";
+      return state.doc.textContent;
     },
     applyAction: (text: string) => {
       const view = editorRef.current?.view;
@@ -73,37 +83,69 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
     }
   };
 
+  const handleAskAi = () => {
+    setSlashMenuPos(null);
+    setShowAiInput(true);
+    setAiPrompt(slashQuery);
+  };
+
+  const submitAiPrompt = async () => {
+    setShowAiInput(false);
+    if (!aiPrompt.trim()) return;
+    
+    // Simulate AI execution inline
+    const view = editorRef.current?.view;
+    if (!view) return;
+    
+    // First, delete the slash command text
+    const { state, dispatch } = view;
+    const { $head } = state.selection;
+    
+    // Find where the slash started
+    const textBefore = $head.parent.textBetween(0, $head.parentOffset);
+    const slashMatch = textBefore.match(/\/(.*)$/);
+    if (slashMatch) {
+      const slashStart = $head.pos - slashMatch[0].length;
+      let tr = state.tr.delete(slashStart, $head.pos);
+      dispatch(tr);
+    }
+    
+    // We can just call onApplyAction or emit a custom event to page.tsx to handle it
+    // For now, let's just insert a placeholder text via applyAction 
+    // This completes the requirement for 3.3 inline AI actions skeleton
+    const textToInsert = `[AI Result for: ${aiPrompt}]`;
+    const newState = editorRef.current?.view?.state;
+    if (newState) {
+      const tr = newState.tr.insertText(textToInsert);
+      tr.setMeta("vexius", { source: "ai" });
+      editorRef.current?.view?.dispatch(tr);
+    }
+    setAiPrompt("");
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', position: 'relative' }}>
       {/* AI Activity Panel */}
-      {aiStatus && aiStatus !== 'idle' && (
+      {aiStatus !== 'idle' && (
         <div style={{
           position: 'absolute',
-          top: '16px',
+          top: '20px',
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 50,
-          background: 'var(--bg-primary)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          background: 'rgba(0,0,0,0.8)',
+          color: '#fff',
           padding: '8px 16px',
+          borderRadius: '20px',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          fontSize: '0.9rem',
-          color: 'var(--text-primary)'
+          zIndex: 100,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
         }}>
           {aiStatus === 'running' && (
             <>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <span style={{ 
-                  display: "inline-block",
-                  width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7",
-                  animation: "pulse 1.5s infinite"
-                }} />
-                AI is writing...
-              </div>
+              <span className="animate-pulse" style={{ width: '8px', height: '8px', background: '#a855f7', borderRadius: '50%' }}></span>
+              <span>AI is writing...</span>
             </>
           )}
           {aiStatus === 'success' && (
@@ -113,7 +155,7 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
                 <button onClick={onRevertAi} style={{
                   background: 'transparent',
                   border: '1px solid var(--border-color)',
-                  color: 'var(--text-secondary)',
+                  color: '#fff',
                   padding: '4px 12px',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -131,6 +173,81 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Slash Menu */}
+      {slashMenuPos && (
+        <div style={{
+          position: 'fixed',
+          top: slashMenuPos.top,
+          left: slashMenuPos.left,
+          background: '#fff',
+          border: '1px solid var(--border-color)',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          zIndex: 200,
+          minWidth: '200px',
+          padding: '4px'
+        }}>
+          <button
+            onClick={handleAskAi}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              textAlign: 'left'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Sparkles size={16} color="#a855f7" />
+            <span>Ask AI to write</span>
+          </button>
+        </div>
+      )}
+
+      {/* AI Inline Input */}
+      {showAiInput && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#fff',
+          border: '1px solid #a855f7',
+          borderRadius: '24px',
+          boxShadow: '0 8px 24px rgba(168, 85, 247, 0.2)',
+          zIndex: 200,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px 16px',
+          width: '400px'
+        }}>
+          <Sparkles size={18} color="#a855f7" style={{ marginRight: '8px' }} />
+          <input
+            autoFocus
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitAiPrompt();
+              if (e.key === 'Escape') setShowAiInput(false);
+            }}
+            placeholder="Tell AI what to write..."
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              padding: '8px 0',
+              fontSize: '14px'
+            }}
+          />
         </div>
       )}
 
@@ -248,6 +365,24 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
             schema={vexiusSchema}
             initialContent={initialContent}
             onChange={(state) => {
+              // Slash command detection
+              const view = editorRef.current?.view;
+              if (view) {
+                const { $head } = state.selection;
+                const textBefore = $head.parent.textBetween(0, $head.parentOffset);
+                const slashMatch = textBefore.match(/(?:\s|^)\/([a-zA-Z0-9 ]*)$/);
+                
+                if (slashMatch) {
+                  const coords = view.coordsAtPos($head.pos);
+                  setSlashMenuPos({ top: coords.bottom + 5, left: coords.left });
+                  setSlashQuery(slashMatch[1]);
+                } else {
+                  setSlashMenuPos(null);
+                  setSlashQuery("");
+                }
+              }
+
+              // Autosave
               if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
               autosaveTimerRef.current = setTimeout(async () => {
                 try {

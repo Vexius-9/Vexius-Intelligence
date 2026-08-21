@@ -17,12 +17,13 @@ interface AICopilotProps {
     documentType?: string;
   };
   getCurrentSelection?: () => Promise<string>;
+  getFullText?: () => Promise<string>;
   onApplyAction?: (text: string) => void;
   onAiStart?: () => void;
   onAiEnd?: () => void;
 }
 
-export function AICopilot({ documentContext, getCurrentSelection, onApplyAction, onAiStart, onAiEnd }: AICopilotProps) {
+export function AICopilot({ documentContext, getCurrentSelection, getFullText, onApplyAction, onAiStart, onAiEnd }: AICopilotProps) {
   const [selectedModel, setSelectedModel] = useState<string>("openai:gpt-4o");
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
@@ -142,6 +143,12 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction,
       const text = await getCurrentSelection();
       if (text && text.trim() !== "") {
          if (documentContext) documentContext.selectedText = text;
+      }
+    }
+    if (getFullText) {
+      const fullText = await getFullText();
+      if (fullText && documentContext) {
+        documentContext.documentContent = fullText;
       }
     }
     handleSubmit(e);
