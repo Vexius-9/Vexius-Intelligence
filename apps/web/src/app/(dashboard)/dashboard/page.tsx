@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles } from "lucide-react";
+import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles, ChevronDown, Upload } from "lucide-react";
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<any[]>([]);
@@ -18,6 +18,8 @@ export default function DashboardPage() {
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -433,79 +435,39 @@ export default function DashboardPage() {
             gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", 
             gap: "16px" 
           }}>
-            {/* New Folder Card */}
-            <div 
-              onClick={() => createNewDocument('folder')}
-              style={{
-                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#eab308", transition: "all 0.2s" // Yellow for Folder
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#eab308"; e.currentTarget.style.background = "rgba(234, 179, 8, 0.05)"; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
-            >
-              <Folder size={32} style={{ marginBottom: "8px" }} />
-              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New Folder</span>
-            </div>
-
-            {/* New Word Card */}
-            <div 
-              onClick={() => createNewDocument('document')}
-              style={{
-                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#3b82f6", transition: "all 0.2s" // Blue for Word
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = "rgba(59, 130, 246, 0.05)"; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
-            >
-              <Plus size={32} style={{ marginBottom: "8px" }} />
-              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New Word</span>
-            </div>
-
-            {/* New Excel Card */}
-            <div 
-              onClick={() => createNewDocument('spreadsheet')}
-              style={{
-                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#10b981", transition: "all 0.2s" // Green for Excel
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#10b981"; e.currentTarget.style.background = "rgba(16, 185, 129, 0.05)"; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
-            >
-              <Plus size={32} style={{ marginBottom: "8px" }} />
-              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New Excel</span>
-            </div>
-
-            {/* New PowerPoint Card */}
-            <div 
-              onClick={() => createNewDocument('presentation')}
-              style={{
-                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#f97316", transition: "all 0.2s" // Orange for PowerPoint
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#f97316"; e.currentTarget.style.background = "rgba(249, 115, 22, 0.05)"; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
-            >
-              <Plus size={32} style={{ marginBottom: "8px" }} />
-              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New PowerPoint</span>
-            </div>
-
-            {/* Upload Document Card */}
-            <div 
-              onClick={handleUploadClick}
-              style={{
-                aspectRatio: "3/4", background: "transparent", border: "1px dashed var(--border-color)", borderRadius: "8px",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "var(--text-secondary)", transition: "all 0.2s"
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = "var(--text-primary)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-            >
-              <Plus size={32} style={{ marginBottom: "8px" }} />
-              <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>Upload Document</span>
+            {/* Create New / Upload Card */}
+            <div style={{ position: "relative" }}>
+              <div 
+                onClick={() => setShowCreateMenu(!showCreateMenu)}
+                style={{
+                  aspectRatio: "3/4", background: "transparent", border: "1px dashed var(--border-color)", borderRadius: "8px",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", color: "var(--text-secondary)", transition: "all 0.2s"
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.borderColor = "var(--text-primary)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+              >
+                <Plus size={32} style={{ marginBottom: "8px" }} />
+                <span style={{ fontSize: "0.9rem", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                  New <ChevronDown size={14} />
+                </span>
+              </div>
+              
+              {showCreateMenu && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, marginTop: "8px",
+                  background: "var(--bg-secondary)", border: "1px solid var(--border-color)",
+                  borderRadius: "8px", width: "100%", zIndex: 50, boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+                  display: "flex", flexDirection: "column", padding: "8px"
+                }}>
+                  <button onClick={() => { setShowCreateMenu(false); createNewDocument('folder'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><Folder size={16} color="#eab308" /> New Folder</button>
+                  <button onClick={() => { setShowCreateMenu(false); createNewDocument('document'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><FileText size={16} color="#3b82f6" /> New Word</button>
+                  <button onClick={() => { setShowCreateMenu(false); createNewDocument('spreadsheet'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><FileText size={16} color="#10b981" /> New Excel</button>
+                  <button onClick={() => { setShowCreateMenu(false); createNewDocument('presentation'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><FileText size={16} color="#f97316" /> New PowerPoint</button>
+                  <div style={{ height: "1px", background: "var(--border-color)", margin: "4px 0" }} />
+                  <button onClick={() => { setShowCreateMenu(false); handleUploadClick(); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><Upload size={16} /> Upload Document</button>
+                </div>
+              )}
             </div>
 
             {/* List existing documents */}
