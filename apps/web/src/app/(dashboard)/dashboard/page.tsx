@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight } from "lucide-react";
+import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles } from "lucide-react";
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<any[]>([]);
