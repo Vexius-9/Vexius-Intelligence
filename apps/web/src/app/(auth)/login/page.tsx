@@ -4,7 +4,9 @@ import React, { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 import bs58 from "bs58";
 
 export default function LoginPage() {
@@ -79,6 +81,25 @@ export default function LoginPage() {
       background: "var(--bg-primary)",
       position: "relative"
     }}>
+      <Link href="/" style={{
+        position: "absolute",
+        top: "24px",
+        left: "24px",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        color: "var(--text-secondary)",
+        textDecoration: "none",
+        fontSize: "0.9rem",
+        fontWeight: 500,
+        transition: "color 0.2s"
+      }}
+      className="back-btn"
+      onMouseOver={(e) => e.currentTarget.style.color = "var(--text-primary)"}
+      onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+      >
+        <ArrowLeft size={16} /> Back to Home
+      </Link>
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
