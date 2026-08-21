@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Send, Bot, Sparkles, ChevronDown } from "lucide-react";
 import { useChat } from "ai/react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface AICopilotProps {
   documentContext?: {
@@ -106,11 +107,15 @@ export function AICopilot({ documentContext }: AICopilotProps) {
                 msg.content
               ) : (
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     p: ({ node, ...props }) => <p style={{ margin: "0 0 8px 0" }} {...props} />,
                     ul: ({ node, ...props }) => <ul style={{ margin: "0 0 8px 0", paddingLeft: "20px" }} {...props} />,
                     ol: ({ node, ...props }) => <ol style={{ margin: "0 0 8px 0", paddingLeft: "20px" }} {...props} />,
-                    li: ({ node, ...props }) => <li style={{ marginBottom: "4px" }} {...props} />
+                    li: ({ node, ...props }) => <li style={{ marginBottom: "4px" }} {...props} />,
+                    table: ({ node, ...props }) => <table className="w-full text-left border-collapse my-2 text-sm" {...props} />,
+                    th: ({ node, ...props }) => <th className="border-b border-gray-600 bg-gray-800/50 p-2 font-semibold" {...props} />,
+                    td: ({ node, ...props }) => <td className="border-b border-gray-700/50 p-2" {...props} />,
                   }}
                 >
                   {msg.content}
