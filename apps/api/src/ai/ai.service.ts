@@ -143,7 +143,22 @@ export class AiService {
     return result.toTextStreamResponse();
   }
 
-  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf', text: string, workspaceId?: string, userId?: string) {
+  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf', text: string, workspaceId?: string, userId?: string, documentId?: string) {
+    if ((!text || text.trim() === "") && documentId) {
+      // Fetch document chunks if text is empty
+      const chunks = await this.prisma.documentChunk.findMany({
+        where: { documentId },
+        orderBy: { createdAt: 'asc' }
+      });
+      if (chunks.length > 0) {
+        text = chunks.map(c => c.content).join('\n\n');
+        // Truncate to ~200,000 characters to prevent massive context overflow for standard inline models
+        if (text.length > 200000) {
+          text = text.substring(0, 200000) + '... [Document truncated due to length]';
+        }
+      }
+    }
+
     const model = await this.getModel('openai:gpt-4o'); // Use default model for inline actions or extract from config
 
     // @ts-ignore

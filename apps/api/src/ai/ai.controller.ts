@@ -58,14 +58,17 @@ export class AiController {
 
   @Post('inline-action')
   async inlineAction(
-    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf'; text: string; workspaceId?: string },
+    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf'; text?: string; workspaceId?: string; documentId?: string },
     @Req() req: FastifyRequest
   ) {
-    if (!body.action || !body.text) {
-      throw new BadRequestException('Action and text are required');
+    if (!body.action) {
+      throw new BadRequestException('Action is required');
+    }
+    if (!body.text && !body.documentId) {
+      throw new BadRequestException('Either text or documentId is required');
     }
     const user = (req as any).user;
-    return this.aiService.executeInlineAction(body.action, body.text, body.workspaceId, user?.id);
+    return this.aiService.executeInlineAction(body.action, body.text || "", body.workspaceId, user?.id, body.documentId);
   }
 
   @Get('search')

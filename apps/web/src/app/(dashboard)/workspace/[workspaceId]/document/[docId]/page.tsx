@@ -227,6 +227,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
           documentContext={{
             documentTitle: docMetadata?.name || "Untitled Document",
             workspaceId: unwrappedParams.workspaceId,
+            documentId: unwrappedParams.docId,
             documentType: docMetadata?.type
           }}
           getCurrentSelection={getCurrentSelection}

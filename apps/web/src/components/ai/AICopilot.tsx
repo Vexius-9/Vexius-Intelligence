@@ -12,6 +12,7 @@ interface AICopilotProps {
     documentTitle?: string;
     documentContent?: string;
     workspaceId?: string;
+    documentId?: string;
     documentType?: string;
   };
   getCurrentSelection?: () => Promise<string>;
@@ -50,9 +51,17 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
 
     try {
       setIsProcessingAction(true);
-      const text = await getCurrentSelection();
+      let text = await getCurrentSelection();
+      
       if (!text || text.trim() === "") {
-        alert("Please select some text in the document first.");
+        if (action === 'summarize_pdf' || action === 'summarize' || action === 'slide_structure') {
+          text = documentContext?.documentContent || "";
+        }
+      }
+      
+      // If we don't have text, AND we don't have a documentId to fallback on the backend, then alert.
+      if ((!text || text.trim() === "") && !documentContext?.documentId) {
+        alert("Please select some text in the document first or ensure the document has content.");
         setIsProcessingAction(false);
         return;
       }
@@ -66,7 +75,8 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
         body: JSON.stringify({
           action,
           text,
-          workspaceId: documentContext?.workspaceId
+          workspaceId: documentContext?.workspaceId,
+          documentId: documentContext?.documentId
         })
       });
 
