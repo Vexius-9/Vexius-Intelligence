@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingDocs, setLoadingDocs] = useState(false);
   const [creating, setCreating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDocs = async () => {
       if (!activeWorkspaceId) return;
+      setLoadingDocs(true);
       try {
         const token = localStorage.getItem("vexius_token");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -63,6 +65,8 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoadingDocs(false);
       }
     };
     fetchDocs();
@@ -165,75 +169,16 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "48px" }}>
-      {/* Workspaces Section */}
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "24px" }}>
-          <div>
-            <h1 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "8px" }}>
-              Workspaces
-            </h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-              Select a workspace to manage your documents.
-            </p>
-          </div>
-        </div>
-
-        <div className="workspace-grid" style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", 
-          gap: "24px" 
-        }}>
-          {workspaces.map((ws) => {
-            const isActive = activeWorkspaceId === ws.id;
-            return (
-              <div 
-                key={ws.id} 
-                onClick={() => setActiveWorkspaceId(ws.id)}
-                style={{
-                  padding: "24px",
-                  background: isActive ? "var(--bg-secondary)" : "transparent",
-                  border: isActive ? "1px solid var(--text-primary)" : "1px solid var(--border-color)",
-                  borderRadius: "12px",
-                  transition: "all 0.2s",
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) => {
-                  if(!isActive) e.currentTarget.style.borderColor = "var(--text-secondary)";
-                }}
-                onMouseOut={(e) => {
-                  if(!isActive) e.currentTarget.style.borderColor = "var(--border-color)";
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                  <div style={{ width: "40px", height: "40px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", border: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Settings size={18} color={isActive ? "var(--text-primary)" : "var(--text-secondary)"} />
-                  </div>
-                  {isActive && (
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-primary)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: "100px", border: "1px solid var(--border-subtle)" }}>
-                      Active
-                    </span>
-                  )}
-                </div>
-                <h3 style={{ fontSize: "1.1rem", fontWeight: 500, marginBottom: "8px" }}>{ws.name}</h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Bot size={14} /> {ws.aiTokensUsed || 0} AI Tokens Used
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Documents Section */}
       {activeWorkspace && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "24px" }}>
             <div>
-              <h2 style={{ fontSize: "1.5rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "4px" }}>
+              <h1 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "8px" }}>
                 Documents
-              </h2>
+              </h1>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-                In {activeWorkspace.name}
+                Manage your documents in {activeWorkspace.name}.
               </p>
             </div>
           </div>
@@ -273,8 +218,25 @@ export default function DashboardPage() {
             </div>
 
             {/* List existing documents */}
-            {documents.map((doc) => (
-              <Link key={doc.id} href={`/workspace/${activeWorkspace.id}/document/${doc.id}`} style={{
+            {loadingDocs ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={`shimmer-${i}`} className="animate-pulse" style={{
+                  aspectRatio: "3/4",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column"
+                }}>
+                  <div style={{ width: "24px", height: "24px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", marginBottom: "auto" }} />
+                  <div style={{ height: "14px", background: "rgba(255,255,255,0.05)", borderRadius: "4px", width: "70%", marginBottom: "8px" }} />
+                  <div style={{ height: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "4px", width: "40%" }} />
+                </div>
+              ))
+            ) : (
+              documents.map((doc) => (
+                <Link key={doc.id} href={`/workspace/${activeWorkspace.id}/document/${doc.id}`} style={{
                 aspectRatio: "3/4",
                 background: "var(--bg-secondary)",
                 border: "1px solid var(--border-color)",
@@ -323,10 +285,10 @@ export default function DashboardPage() {
                   {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
                 </p>
               </Link>
-            ))}
+            )))}
           </div>
 
-          {documents.length === 0 && (
+          {!loadingDocs && documents.length === 0 && (
             <div style={{ marginTop: "32px", padding: "48px", textAlign: "center", border: "1px dashed var(--border-color)", borderRadius: "12px", color: "var(--text-secondary)" }}>
               <FileText size={48} style={{ margin: "0 auto 16px", opacity: 0.5 }} />
               <h3 style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--text-primary)", marginBottom: "8px" }}>No documents yet</h3>
