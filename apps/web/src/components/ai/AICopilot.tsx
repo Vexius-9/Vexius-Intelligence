@@ -12,6 +12,7 @@ interface AICopilotProps {
     documentTitle?: string;
     documentContent?: string;
     workspaceId?: string;
+    documentType?: string;
   };
   getCurrentSelection?: () => Promise<string>;
   onApplyAction?: (text: string) => void;
@@ -26,7 +27,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
     setToken(localStorage.getItem("vexius_token") || "");
   }, []);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
     api: `${process.env.NEXT_PUBLIC_API_URL}/ai/chat`,
     streamProtocol: "text",
     headers: {
@@ -41,7 +42,7 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
     ]
   });
 
-  const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar') => {
+  const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf') => {
     if (!getCurrentSelection || !onApplyAction) {
       alert("Inline actions are not available in this context.");
       return;
@@ -72,7 +73,13 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
       if (!res.ok) throw new Error("Action failed");
       const data = await res.json();
       
-      onApplyAction(data.result);
+      // For explain or PDF actions, we don't want to replace text in document
+      // We want to just output it in the chat.
+      if (action === 'explain_formula' || action === 'summarize_pdf') {
+        append({ role: 'assistant', content: `**${action === 'explain_formula' ? 'Formula Explanation' : 'PDF Summary'}**\n\n${data.result}` });
+      } else {
+        onApplyAction(data.result);
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to execute action.");
@@ -146,15 +153,41 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
         borderBottom: "1px solid var(--border-color)",
         background: "rgba(0,0,0,0.2)", flexWrap: "wrap"
       }}>
-        <button onClick={() => handleInlineAction('rewrite')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-          <Edit3 size={12} /> Rewrite
-        </button>
-        <button onClick={() => handleInlineAction('summarize')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-          <Type size={12} /> Summarize
-        </button>
-        <button onClick={() => handleInlineAction('grammar')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-          <CheckCircle size={12} /> Grammar
-        </button>
+        {documentContext?.documentType === 'spreadsheet' ? (
+          <>
+            <button onClick={() => handleInlineAction('generate_formula')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <Sparkles size={12} /> Generate Formula
+            </button>
+            <button onClick={() => handleInlineAction('explain_formula')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <CheckCircle size={12} /> Explain Formula
+            </button>
+          </>
+        ) : documentContext?.documentType === 'presentation' ? (
+          <>
+            <button onClick={() => handleInlineAction('slide_structure')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <Sparkles size={12} /> Structure Slide
+            </button>
+            <button onClick={() => handleInlineAction('summarize')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <Type size={12} /> Summarize Slide
+            </button>
+          </>
+        ) : documentContext?.documentType === 'pdf' ? (
+          <button onClick={() => handleInlineAction('summarize_pdf')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+            <Type size={12} /> Summarize PDF
+          </button>
+        ) : (
+          <>
+            <button onClick={() => handleInlineAction('rewrite')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <Edit3 size={12} /> Rewrite
+            </button>
+            <button onClick={() => handleInlineAction('summarize')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <Type size={12} /> Summarize
+            </button>
+            <button onClick={() => handleInlineAction('grammar')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+              <CheckCircle size={12} /> Fix Grammar
+            </button>
+          </>
+        )}
       </div>
 
       {/* Messages Area */}

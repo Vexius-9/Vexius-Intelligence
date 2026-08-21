@@ -57,7 +57,7 @@ export class AiController {
 
   @Post('inline-action')
   async inlineAction(
-    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar'; text: string; workspaceId?: string },
+    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf'; text: string; workspaceId?: string },
     @Req() req: FastifyRequest
   ) {
     if (!body.action || !body.text) {

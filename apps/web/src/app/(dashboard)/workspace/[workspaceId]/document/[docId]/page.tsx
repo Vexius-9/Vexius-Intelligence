@@ -226,7 +226,8 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
         <AICopilot 
           documentContext={{
             documentTitle: docMetadata?.name || "Untitled Document",
-            workspaceId: unwrappedParams.workspaceId
+            workspaceId: unwrappedParams.workspaceId,
+            documentType: docMetadata?.type
           }}
           getCurrentSelection={getCurrentSelection}
           onApplyAction={onApplyAction}

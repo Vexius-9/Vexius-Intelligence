@@ -136,7 +136,7 @@ export class AiService {
     return result.toTextStreamResponse();
   }
 
-  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar', text: string, workspaceId?: string, userId?: string) {
+  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf', text: string, workspaceId?: string, userId?: string) {
     const model = await this.getModel('openai:gpt-4o'); // Use default model for inline actions or extract from config
 
     // @ts-ignore
@@ -149,6 +149,14 @@ export class AiService {
       prompt = `You are an expert summarizer. Please summarize the following text concisely. Return ONLY the summarized text without any quotes or explanations.\n\nText: ${text}`;
     } else if (action === 'grammar') {
       prompt = `You are a strict grammar checker. Please fix any spelling, punctuation, or grammatical errors in the following text. Preserve the original meaning and tone as much as possible. Return ONLY the corrected text without any quotes or explanations.\n\nText: ${text}`;
+    } else if (action === 'generate_formula') {
+      prompt = `You are an Excel/Spreadsheet expert. Based on the user's description, generate ONLY the exact Excel formula starting with '='. Do not include any explanations, markdown code blocks, or quotes.\n\nDescription: ${text}`;
+    } else if (action === 'explain_formula') {
+      prompt = `You are an Excel/Spreadsheet expert. Please explain the following Excel formula in simple, easy-to-understand terms. Keep it concise.\n\nFormula: ${text}`;
+    } else if (action === 'slide_structure') {
+      prompt = `You are an expert presentation designer. Create a clear, professional slide outline based on the following text. Use bullet points. Do not include extra conversational filler.\n\nText: ${text}`;
+    } else if (action === 'summarize_pdf') {
+      prompt = `You are an expert document summarizer. Please provide a concise, high-level summary of the following PDF text. Highlight the main ideas.\n\nPDF Text: ${text}`;
     } else {
       throw new BadRequestException('Invalid action');
     }
