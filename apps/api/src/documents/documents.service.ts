@@ -377,6 +377,7 @@ export class DocumentsService {
             data: {
               currentVersion: newVersion,
               storageKey: storagePath,
+              size: fileBuffer.length,
             }
           });
 
@@ -388,6 +389,12 @@ export class DocumentsService {
               createdBy: 'ONLYOFFICE', // or we could extract user from body.users
             }
           });
+        });
+
+        // 5. Dispatch index job for AI search
+        await this.documentIndexingQueue.add('index-document', {
+          documentId: document.id,
+          workspaceId: document.workspaceId
         });
 
         this.logger.log(`Document ${documentId} saved successfully from ONLYOFFICE (version ${newVersion})`);

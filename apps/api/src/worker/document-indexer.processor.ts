@@ -38,12 +38,38 @@ export class DocumentIndexerProcessor extends WorkerHost {
         throw new Error('Document not found');
       }
 
-      // In a real scenario, we'd download the file and parse it.
-      // For now, we will mock the text extraction.
-      const extractedText = `This is the mock content for document ${document.name}. It contains important information about Vexius.`;
+      // Download the file from Supabase Storage
+      const fileBuffer = await this.storageClient.downloadFile('vexius-documents', document.storageKey);
+
+      // Parse text based on document type
+      let extractedText = '';
+      if (document.type === 'document' || document.type === 'spreadsheet' || document.type === 'presentation') {
+        // @ts-ignore
+        const officeParser = await Function('return import("officeparser")')();
+        try {
+          extractedText = await officeParser.parseOfficeAsync(fileBuffer);
+        } catch (e) {
+          this.logger.error(`officeparser failed for ${document.name}`, e);
+          extractedText = `(Error parsing document: ${e.message})`;
+        }
+      } else if (document.type === 'pdf') {
+        // @ts-ignore
+        const pdfParse = await Function('return import("pdf-parse")')();
+        try {
+          const pdfData = await pdfParse(fileBuffer);
+          extractedText = pdfData.text;
+        } catch (e) {
+          this.logger.error(`pdf-parse failed for ${document.name}`, e);
+          extractedText = `(Error parsing PDF: ${e.message})`;
+        }
+      }
+
+      if (!extractedText.trim()) {
+         extractedText = "(Document is empty or could not be parsed)";
+      }
       
-      // Simple chunking strategy (split by sentences or fixed length)
-      const chunks = [extractedText]; // Just 1 chunk for demonstration
+      // Simple chunking strategy (split by sentences or fixed length, for now just 1 chunk for MVP)
+      const chunks = [extractedText.substring(0, 10000)]; // Limit to avoid massive embeddings for now
 
       if (chunks.length > 0) {
         // @ts-ignore

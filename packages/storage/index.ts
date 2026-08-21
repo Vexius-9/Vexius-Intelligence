@@ -40,6 +40,19 @@ export class StorageClient {
   }
 
   /**
+   * Downloads a file and returns its buffer.
+   */
+  async downloadFile(bucketName: string, path: string): Promise<Buffer> {
+    const { data, error } = await this.client.storage
+      .from(bucketName)
+      .download(path);
+
+    if (error) throw error;
+    const arrayBuffer = await data.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  /**
    * Deletes a file.
    */
   async deleteFile(bucketName: string, path: string) {
