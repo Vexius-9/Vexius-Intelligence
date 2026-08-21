@@ -2,7 +2,8 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Database, Lock, Globe, Cpu, ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { IsometricStack } from "@/components/ui/IsometricStack";
 import Link from "next/link";
 
@@ -13,14 +14,7 @@ export default function Home() {
       <nav className="nav-bar">
         <div className="nav-content">
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "24px",
-                height: "24px",
-                background: "#fff",
-                borderRadius: "4px",
-              }}
-            />
+            <Image src="/logo.png" alt="Vexius Logo" width={24} height={24} />
             <span style={{ fontWeight: 600, fontSize: "1.05rem", letterSpacing: "-0.01em" }}>
               Vexius
             </span>
@@ -344,7 +338,7 @@ export default function Home() {
         <footer style={{ width: "100%", borderTop: "1px solid var(--border-color)", padding: "48px 24px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "var(--text-primary)" }}>
-              <div style={{ width: "16px", height: "16px", background: "#fff", borderRadius: "2px" }} />
+              <Image src="/logo.png" alt="Vexius Logo" width={16} height={16} />
               Vexius
             </div>
             <div style={{ display: "flex", gap: "24px" }}>

@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Settings, Folder, FileText, ChevronRight } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-              <div style={{ width: "24px", height: "24px", background: "#fff", borderRadius: "4px" }} />
+              <Image src="/logo.png" alt="Vexius Logo" width={24} height={24} />
               <span style={{ fontWeight: 600, fontSize: "1.1rem", letterSpacing: "-0.01em" }}>Vexius</span>
             </Link>
             <div style={{ width: "1px", height: "24px", background: "var(--border-color)", margin: "0 8px" }} />

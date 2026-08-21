@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, Book, Shield, Zap, Database, Code } from "lucide-react";
+import Image from "next/image";
 
 export default function DocsPage() {
   return (
@@ -9,7 +10,7 @@ export default function DocsPage() {
       <nav className="nav-bar">
         <div className="nav-content">
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-            <div style={{ width: "24px", height: "24px", background: "#fff", borderRadius: "4px" }} />
+            <Image src="/logo.png" alt="Vexius Logo" width={24} height={24} />
             <span style={{ fontWeight: 600, fontSize: "1.05rem", letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
               Vexius
             </span>

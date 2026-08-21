@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 import bs58 from "bs58";
 
 export default function LoginPage() {
@@ -116,7 +117,7 @@ export default function LoginPage() {
         }}
       >
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
-          <div style={{ width: "32px", height: "32px", background: "#fff", borderRadius: "4px" }} />
+          <Image src="/logo.png" alt="Vexius Logo" width={32} height={32} />
         </div>
         <h1 style={{ fontSize: "1.5rem", fontWeight: 600, marginBottom: "8px", letterSpacing: "-0.02em" }}>
           Terminal Access
