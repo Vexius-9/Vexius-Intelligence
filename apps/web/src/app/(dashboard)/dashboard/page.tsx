@@ -198,6 +198,19 @@ export default function DashboardPage() {
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("editor");
+  const [inviting, setInviting] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState<{type: "success" | "error", text: string} | null>(null);
+
+  const [runningAgent, setRunningAgent] = useState<string | null>(null);
+
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
@@ -207,11 +220,6 @@ export default function DashboardPage() {
   }
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,12 +242,6 @@ export default function DashboardPage() {
       setIsSearching(false);
     }
   };
-
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("editor");
-  const [inviting, setInviting] = useState(false);
-  const [inviteMessage, setInviteMessage] = useState<{type: "success" | "error", text: string} | null>(null);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,8 +275,6 @@ export default function DashboardPage() {
       setInviting(false);
     }
   };
-
-  const [runningAgent, setRunningAgent] = useState<string | null>(null);
 
   const handleRunAgent = async (e: React.MouseEvent, docId: string, agentType: 'financial-analyst' | 'legal-reviewer') => {
     e.preventDefault();
