@@ -52,4 +52,37 @@ export class WorkspacesService {
       },
     });
   }
+
+  async inviteToWorkspace(workspaceId: string, inviterId: string, targetEmail: string, role: string) {
+    // 1. Check if inviter is owner
+    const inviterMembership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId: inviterId } }
+    });
+
+    if (!inviterMembership || inviterMembership.role !== 'owner') {
+      throw new Error('Only owners can invite members');
+    }
+
+    // 2. Find target user
+    const targetUser = await this.prisma.user.findUnique({
+      where: { email: targetEmail }
+    });
+
+    if (!targetUser) {
+      throw new Error('User not found');
+    }
+
+    // 3. Create or update membership
+    const membership = await this.prisma.workspaceMember.upsert({
+      where: { workspaceId_userId: { workspaceId, userId: targetUser.id } },
+      update: { role },
+      create: {
+        workspaceId,
+        userId: targetUser.id,
+        role
+      }
+    });
+
+    return membership;
+  }
 }

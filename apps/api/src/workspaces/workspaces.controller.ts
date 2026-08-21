@@ -48,4 +48,14 @@ export class WorkspacesController {
   ) {
     return this.workspacesService.getWorkspaceById(id, user.id);
   }
+
+  @Post(':id/invite')
+  async inviteToWorkspace(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body('email') email: string,
+    @Body('role') role: string = 'editor',
+  ) {
+    return this.workspacesService.inviteToWorkspace(id, user.id, email, role);
+  }
 }

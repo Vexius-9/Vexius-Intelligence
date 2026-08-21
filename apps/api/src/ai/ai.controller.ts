@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, UseGuards, Get, Query, BadRequestException } from '@nestjs/common';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 import { Readable } from 'stream';
 
 @Controller('ai')
@@ -61,9 +62,43 @@ export class AiController {
     @Req() req: FastifyRequest
   ) {
     if (!body.action || !body.text) {
-      throw new Error('Action and text are required');
+      throw new BadRequestException('Action and text are required');
     }
     const user = (req as any).user;
     return this.aiService.executeInlineAction(body.action, body.text, body.workspaceId, user?.id);
+  }
+
+  @Get('search')
+  async workspaceSearch(
+    @Query('q') query: string,
+    @Query('workspaceId') workspaceId: string,
+    @CurrentUser() user: any
+  ) {
+    if (!query || !workspaceId) {
+      throw new BadRequestException('q and workspaceId are required');
+    }
+    return this.aiService.semanticSearch(query, workspaceId);
+  }
+
+  @Post('agents/financial-analyst')
+  async runFinancialAnalyst(
+    @Body() body: { documentId: string; workspaceId: string },
+    @CurrentUser() user: any
+  ) {
+    if (!body.documentId || !body.workspaceId) {
+      throw new BadRequestException('documentId and workspaceId are required');
+    }
+    return this.aiService.runAgent('financial-analyst', body.documentId, body.workspaceId, user.id);
+  }
+
+  @Post('agents/legal-reviewer')
+  async runLegalReviewer(
+    @Body() body: { documentId: string; workspaceId: string },
+    @CurrentUser() user: any
+  ) {
+    if (!body.documentId || !body.workspaceId) {
+      throw new BadRequestException('documentId and workspaceId are required');
+    }
+    return this.aiService.runAgent('legal-reviewer', body.documentId, body.workspaceId, user.id);
   }
 }

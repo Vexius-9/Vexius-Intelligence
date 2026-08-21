@@ -108,17 +108,27 @@ export class DocumentsService {
     }
   }
 
-  async getDocumentsByWorkspace(workspaceId: string, userId: string) {
-    // Basic verification
+  async getDocumentsByWorkspace(workspaceId: string, userId: string, parentId?: string) {
     const membership = await this.prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId } }
+      where: { workspaceId_userId: { workspaceId, userId } },
     });
 
-    if (!membership) throw new NotFoundException();
+    if (!membership) {
+      throw new UnauthorizedException('User is not a member of this workspace');
+    }
 
     return this.prisma.document.findMany({
-      where: { workspaceId, deletedAt: null },
+      where: { 
+        workspaceId,
+        deletedAt: null,
+        parentId: parentId || null
+      },
       orderBy: { updatedAt: 'desc' },
+      include: {
+        permissions: {
+          where: { userId },
+        },
+      },
     });
   }
 
@@ -154,7 +164,7 @@ export class DocumentsService {
     }
   }
 
-  async createBlankDocument(userId: string, workspaceId: string, name: string, docType: 'document' | 'spreadsheet' | 'presentation' = 'document') {
+  async createBlankDocument(userId: string, workspaceId: string, name: string, docType: 'document' | 'spreadsheet' | 'presentation' | 'folder' = 'document', parentId?: string) {
     // 1. Verify membership
     const membership = await this.prisma.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
@@ -162,6 +172,32 @@ export class DocumentsService {
 
     if (!membership || membership.role === 'viewer') {
       throw new UnauthorizedException('Not authorized to create documents in this workspace');
+    }
+
+    if (docType === 'folder') {
+      // Setup folder in DB
+      const result = await this.prisma.document.create({
+        data: {
+          workspaceId,
+          ownerId: userId,
+          name: name || 'Untitled Folder',
+          type: 'folder',
+          mimeType: 'application/vnd.vexius.folder',
+          storageKey: '', // Folders don't have a storage key
+          size: 0,
+          currentVersion: 1,
+          parentId: parentId || null
+        },
+      });
+
+      await this.auditService.logAction(
+        workspaceId,
+        userId,
+        'FOLDER_CREATE',
+        result.id
+      );
+
+      return result;
     }
 
     // 2. Load template buffer and metadata
@@ -218,6 +254,7 @@ export class DocumentsService {
           storageKey: storagePath,
           size: fileBuffer.length,
           currentVersion: 1,
+          parentId: parentId || null
         },
       });
 
@@ -326,7 +363,17 @@ export class DocumentsService {
           name: membership.user.email, // using email as name for now
         },
         mode: membership.role === 'viewer' ? 'view' : 'edit',
+        customization: {
+          forcesave: true,
+          comments: true
+        }
       },
+      permissions: {
+        comment: true,
+        edit: membership.role !== 'viewer',
+        download: true,
+        print: true
+      }
     };
 
     // Sign the config

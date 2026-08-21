@@ -19,7 +19,7 @@ interface AICopilotProps {
 }
 
 export function AICopilot({ documentContext, getCurrentSelection, onApplyAction }: AICopilotProps) {
-  const [selectedModel, setSelectedModel] = useState<"t1" | "t2">("t1"); // t1 = DeepSeek, t2 = Grok
+  const [selectedModel, setSelectedModel] = useState<string>("openai:gpt-4o");
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
@@ -141,8 +141,9 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
               appearance: "none"
             }}
           >
-            <option value="t1">DeepSeek (T1)</option>
-            <option value="t2">Grok (T2)</option>
+            <option value="openai:gpt-4o">OpenAI GPT-4o</option>
+            <option value="xai:grok-beta">X.AI Grok</option>
+            <option value="deepseek:deepseek-chat">DeepSeek</option>
           </select>
         </div>
       </div>

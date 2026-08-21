@@ -52,7 +52,7 @@ model Document {
   workspaceId     String   @map("workspace_id")
   ownerId         String   @map("owner_id")
   name            String
-  type            String   // document, spreadsheet, presentation, pdf
+  type            String   // document, spreadsheet, presentation, pdf, folder
   mimeType        String   @map("mime_type")
   storageKey      String   @map("storage_key")
   size            Int
@@ -60,6 +60,10 @@ model Document {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
+  
+  parentId        String?   @map("parent_id")
+  parent          Document? @relation("FolderChildren", fields: [parentId], references: [id])
+  children        Document[] @relation("FolderChildren")
 
   versions        DocumentVersion[]
   permissions     DocumentPermission[]

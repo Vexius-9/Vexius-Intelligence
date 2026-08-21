@@ -21,6 +21,13 @@ export class AiService {
     
     // @ts-ignore
     const { createOpenAI } = await Function('return import("@ai-sdk/openai")')();
+    
+    if (provider === 'openai') {
+      const openai = createOpenAI({
+        apiKey: this.configService.get('OPENAI_API_KEY'),
+      });
+      return openai(modelId || 'gpt-4o');
+    }
 
     if (provider === 'xai' || provider === 't2') {
       const xai = createOpenAI({
@@ -38,7 +45,7 @@ export class AiService {
       return deepseek(modelId || this.configService.get('LLM_T1_MODEL') || 'deepseek-chat');
     }
 
-    throw new BadRequestException(`Unsupported provider: ${provider}. Gunakan 'xai' (T2) atau 'deepseek' (T1).`);
+    throw new BadRequestException(`Unsupported provider: ${provider}. Use 'openai', 'xai', or 'deepseek'.`);
   }
 
   /**
@@ -178,5 +185,94 @@ export class AiService {
     }
 
     return { result: result.text };
+  }
+
+  /**
+   * Vexius Agents
+   */
+  async runAgent(agentType: 'financial-analyst' | 'legal-reviewer', documentId: string, workspaceId: string, userId: string) {
+    // 1. Fetch document chunks
+    const chunks = await this.prisma.documentChunk.findMany({
+      where: { documentId },
+      orderBy: { id: 'asc' }
+    });
+
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId }});
+    if (!doc) throw new BadRequestException("Document not found");
+
+    if (!chunks || chunks.length === 0) {
+      throw new BadRequestException("Document has not been indexed yet or is empty.");
+    }
+
+    const fullText = chunks.map(c => c.content).join('\n');
+
+    let prompt = "";
+    let resultFileName = "";
+
+    if (agentType === 'financial-analyst') {
+      prompt = `You are a Senior Financial Analyst. Analyze the following data (extracted from a spreadsheet).
+Provide a structured summary, key insights, identify any trends, and present a concise projection if applicable.
+Format the output as a professional Markdown document.
+
+Data:
+${fullText.substring(0, 50000)} // limit to avoid massive context issues for MVP
+`;
+      resultFileName = `Financial Analysis - ${doc.name}.md`;
+    } else if (agentType === 'legal-reviewer') {
+      prompt = `You are an expert Legal Counsel. Review the following contract/document text.
+Identify any potential conflicts of interest, liabilities, missing standard clauses, or ambiguous terms.
+Format the output as a professional Markdown document with clear headings and bullet points.
+
+Text:
+${fullText.substring(0, 50000)}
+`;
+      resultFileName = `Legal Review - ${doc.name}.md`;
+    }
+
+    const model = await this.getModel('openai:gpt-4o');
+    // @ts-ignore
+    const { generateText } = await Function('return import("ai")')();
+
+    const result = await generateText({
+      model,
+      prompt,
+    });
+
+    const markdownContent = result.text;
+    const buffer = Buffer.from(markdownContent, 'utf-8');
+
+    // 2. Save document to storage and DB
+    const { StorageClient } = await import('@vexius/storage');
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL') || '';
+    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const storageClient = new StorageClient(supabaseUrl, supabaseKey);
+
+    const newDocId = crypto.randomUUID();
+    const storagePath = `workspaces/${workspaceId}/documents/${newDocId}/versions/1-${resultFileName}`;
+
+    await storageClient.uploadFile('vexius-documents', storagePath, buffer, 'text/markdown');
+
+    const createdDoc = await this.prisma.document.create({
+      data: {
+        id: newDocId,
+        workspaceId,
+        ownerId: userId,
+        name: resultFileName,
+        type: 'document',
+        mimeType: 'text/markdown',
+        storageKey: storagePath,
+        size: buffer.length,
+        currentVersion: 1,
+        versions: {
+          create: {
+            version: 1,
+            storageKey: storagePath,
+            createdBy: userId
+          }
+        }
+      }
+    });
+
+    return createdDoc;
   }
 }

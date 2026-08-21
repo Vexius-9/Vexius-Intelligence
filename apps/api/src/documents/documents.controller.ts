@@ -1,6 +1,6 @@
 import { 
   Controller, Post, Get, Param, UseGuards, 
-  Req, BadRequestException, Body, Delete, Patch 
+  Req, BadRequestException, Body, Delete, Patch, Query
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { DocumentsService } from './documents.service';
@@ -49,22 +49,24 @@ export class DocumentsController {
   async createDocument(
     @Body('workspaceId') workspaceId: string,
     @Body('name') name: string,
-    @Body('type') type: 'document' | 'spreadsheet' | 'presentation',
+    @Body('type') type: 'document' | 'spreadsheet' | 'presentation' | 'folder',
+    @Body('parentId') parentId: string,
     @CurrentUser() user: any
   ) {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId is required');
     }
-    return this.documentsService.createBlankDocument(user.id, workspaceId, name, type || 'document');
+    return this.documentsService.createBlankDocument(user.id, workspaceId, name, type || 'document', parentId);
   }
 
   @Get('workspace/:workspaceId')
   @UseGuards(JwtAuthGuard)
   async getWorkspaceDocuments(
     @Param('workspaceId') workspaceId: string,
+    @Query('parentId') parentId: string,
     @CurrentUser() user: any
   ) {
-    return this.documentsService.getDocumentsByWorkspace(workspaceId, user.id);
+    return this.documentsService.getDocumentsByWorkspace(workspaceId, user.id, parentId);
   }
 
   @Get(':id/download')

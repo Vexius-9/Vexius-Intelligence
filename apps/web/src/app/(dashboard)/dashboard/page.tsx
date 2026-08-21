@@ -2,12 +2,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, FileText, Settings, Trash2, Bot } from "lucide-react";
+import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight } from "lucide-react";
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [folderHistory, setFolderHistory] = useState<{id: string, name: string}[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -48,7 +51,7 @@ export default function DashboardPage() {
     fetchWs();
   }, []);
 
-  // 2. Fetch documents whenever activeWorkspaceId changes
+  // 2. Fetch documents whenever activeWorkspaceId or currentFolderId changes
   useEffect(() => {
     const fetchDocs = async () => {
       if (!activeWorkspaceId) return;
@@ -56,7 +59,11 @@ export default function DashboardPage() {
       try {
         const token = localStorage.getItem("vexius_token");
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const docRes = await fetch(`${apiUrl}/documents/workspace/${activeWorkspaceId}`, {
+        const url = new URL(`${apiUrl}/documents/workspace/${activeWorkspaceId}`);
+        if (currentFolderId) {
+          url.searchParams.append('parentId', currentFolderId);
+        }
+        const docRes = await fetch(url.toString(), {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (docRes.ok) {
@@ -70,7 +77,7 @@ export default function DashboardPage() {
       }
     };
     fetchDocs();
-  }, [activeWorkspaceId]);
+  }, [activeWorkspaceId, currentFolderId]);
 
   const handleUploadClick = () => {
     setShowUploadModal(true);
@@ -101,11 +108,6 @@ export default function DashboardPage() {
       
       if (!res.ok) throw new Error("Failed to upload document");
       const newDoc = await res.json();
-      console.log("Upload response:", newDoc);
-      
-      if (!newDoc || !newDoc.id) {
-        throw new Error("Server returned an invalid response (missing ID): " + JSON.stringify(newDoc));
-      }
       
       // Update state and close modal
       setDocuments(docs => [...docs, newDoc]);
@@ -122,7 +124,7 @@ export default function DashboardPage() {
     }
   };
 
-  const createNewDocument = async (type: 'document' | 'spreadsheet' | 'presentation') => {
+  const createNewDocument = async (type: 'document' | 'spreadsheet' | 'presentation' | 'folder') => {
     if (!activeWorkspaceId) return;
     if (creating) return;
 
@@ -139,8 +141,9 @@ export default function DashboardPage() {
         },
         body: JSON.stringify({
           workspaceId: activeWorkspaceId,
-          name: `Untitled ${type}`,
-          type
+          name: type === 'folder' ? 'Untitled Folder' : `Untitled ${type}`,
+          type,
+          parentId: currentFolderId || undefined
         })
       });
 
@@ -149,7 +152,9 @@ export default function DashboardPage() {
       
       setDocuments(docs => [newDoc, ...docs]); // add to beginning
       
-      router.push(`/workspace/${activeWorkspaceId}/document/${newDoc.id}`);
+      if (type !== 'folder') {
+        router.push(`/workspace/${activeWorkspaceId}/document/${newDoc.id}`);
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to create new document.");
@@ -203,6 +208,109 @@ export default function DashboardPage() {
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim() || !activeWorkspaceId) return;
+
+    setIsSearching(true);
+    setShowSearchResults(true);
+    try {
+      const token = localStorage.getItem("vexius_token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/ai/search?q=${encodeURIComponent(searchQuery)}&workspaceId=${activeWorkspaceId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Search failed");
+      const data = await res.json();
+      setSearchResults(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("editor");
+  const [inviting, setInviting] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState<{type: "success" | "error", text: string} | null>(null);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeWorkspaceId || !inviteEmail.trim()) return;
+
+    setInviting(true);
+    setInviteMessage(null);
+    try {
+      const token = localStorage.getItem("vexius_token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/workspaces/${activeWorkspaceId}/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to invite user");
+      }
+      
+      setInviteMessage({ type: "success", text: `Successfully invited ${inviteEmail}` });
+      setInviteEmail("");
+    } catch (err: any) {
+      console.error(err);
+      setInviteMessage({ type: "error", text: err.message || "Failed to invite user" });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const [runningAgent, setRunningAgent] = useState<string | null>(null);
+
+  const handleRunAgent = async (e: React.MouseEvent, docId: string, agentType: 'financial-analyst' | 'legal-reviewer') => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (runningAgent) return;
+    setRunningAgent(docId);
+    
+    try {
+      const token = localStorage.getItem("vexius_token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/ai/agents/${agentType}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ documentId: docId, workspaceId: activeWorkspaceId })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to run agent");
+      }
+      
+      const newDoc = await res.json();
+      setDocuments(docs => [newDoc, ...docs]);
+      alert(`Agent finished! Created analysis document: ${newDoc.name}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to run agent.");
+    } finally {
+      setRunningAgent(null);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "48px" }}>
       {/* Documents Section */}
@@ -210,12 +318,113 @@ export default function DashboardPage() {
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "24px" }}>
             <div>
-              <h1 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "8px" }}>
-                Documents
-              </h1>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                <h1 
+                  onClick={() => {
+                    setCurrentFolderId(null);
+                    setFolderHistory([]);
+                  }}
+                  style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", cursor: "pointer", color: currentFolderId ? "var(--text-secondary)" : "var(--text-primary)" }}
+                >
+                  Documents
+                </h1>
+                {folderHistory.map((folder, idx) => (
+                  <React.Fragment key={folder.id}>
+                    <ChevronRight size={20} color="var(--text-secondary)" />
+                    <h1 
+                      onClick={() => {
+                        const newHistory = folderHistory.slice(0, idx + 1);
+                        setCurrentFolderId(folder.id);
+                        setFolderHistory(newHistory);
+                      }}
+                      style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", cursor: "pointer", color: idx === folderHistory.length - 1 ? "var(--text-primary)" : "var(--text-secondary)" }}
+                    >
+                      {folder.name}
+                    </h1>
+                  </React.Fragment>
+                ))}
+              </div>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
                 Manage your documents in {activeWorkspace.name}.
               </p>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative" }}>
+              <button 
+                onClick={() => {
+                  setShowShareModal(true);
+                  setInviteMessage(null);
+                }}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  background: "#a855f7",
+                  color: "#fff",
+                  border: "none",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}
+              >
+                Share
+              </button>
+              
+              <form onSubmit={handleSearch} style={{ display: "flex", alignItems: "center" }}>
+                <input 
+                  type="text" 
+                  placeholder="Search inside documents (AI)..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border-color)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    width: "300px",
+                    outline: "none"
+                  }}
+                />
+              </form>
+              
+              {/* Search Results Dropdown */}
+              {showSearchResults && (
+                <div style={{
+                  position: "absolute", top: "100%", right: 0, marginTop: "8px",
+                  background: "var(--bg-secondary)", border: "1px solid var(--border-color)",
+                  borderRadius: "8px", width: "400px", maxHeight: "400px", overflowY: "auto",
+                  zIndex: 50, boxShadow: "0 10px 25px rgba(0,0,0,0.5)", padding: "16px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+                    <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: 600 }}>SEMANTIC SEARCH RESULTS</h4>
+                    <button onClick={() => setShowSearchResults(false)} style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer" }}>✕</button>
+                  </div>
+                  
+                  {isSearching ? (
+                    <div style={{ display: "flex", justifyContent: "center", padding: "24px 0" }}><Loader2 className="animate-spin" size={24} /></div>
+                  ) : searchResults.length === 0 ? (
+                    <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", textAlign: "center", padding: "24px 0" }}>No matching contents found.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {searchResults.map((res: any, idx: number) => (
+                        <Link key={idx} href={`/workspace/${activeWorkspaceId}/document/${res.id}`} style={{ textDecoration: "none" }}>
+                          <div style={{ padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "6px", border: "1px solid transparent", transition: "border-color 0.2s" }}
+                            onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--border-color)"}
+                            onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}
+                          >
+                            <h5 style={{ fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: "4px" }}>{res.documentName}</h5>
+                            <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              "...{res.content}..."
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -224,6 +433,21 @@ export default function DashboardPage() {
             gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", 
             gap: "16px" 
           }}>
+            {/* New Folder Card */}
+            <div 
+              onClick={() => createNewDocument('folder')}
+              style={{
+                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "#eab308", transition: "all 0.2s" // Yellow for Folder
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#eab308"; e.currentTarget.style.background = "rgba(234, 179, 8, 0.05)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
+            >
+              <Folder size={32} style={{ marginBottom: "8px" }} />
+              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New Folder</span>
+            </div>
+
             {/* New Word Card */}
             <div 
               onClick={() => createNewDocument('document')}
@@ -302,57 +526,121 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : (
-              documents.map((doc) => (
-                <Link key={doc.id} href={`/workspace/${activeWorkspace.id}/document/${doc.id}`} style={{
-                aspectRatio: "3/4",
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "8px",
-                padding: "16px",
-                textDecoration: "none",
-                color: "inherit",
-                display: "flex",
-                flexDirection: "column",
-                transition: "border-color 0.2s",
-                position: "relative"
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = "var(--text-primary)";
-                const trashBtn = e.currentTarget.querySelector('.trash-btn') as HTMLElement;
-                if(trashBtn) trashBtn.style.opacity = "1";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-color)";
-                const trashBtn = e.currentTarget.querySelector('.trash-btn') as HTMLElement;
-                if(trashBtn) trashBtn.style.opacity = "0";
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flex: 1 }}>
-                  <div style={{ color: "var(--text-secondary)" }}>
-                    <FileText size={24} />
-                  </div>
-                  <button
-                    className="trash-btn"
-                    onClick={(e) => handleDeleteClick(e, doc.id)}
-                    style={{
-                      opacity: 0,
-                      transition: "opacity 0.2s",
-                      background: "transparent",
-                      border: "none",
-                      color: "#ef4444",
-                      cursor: "pointer",
-                      padding: "4px"
-                    }}
-                    title="Delete Document"
+              documents.map((doc) => {
+                const isFolder = doc.type === 'folder';
+                
+                const cardContent = (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flex: 1 }}>
+                      <div style={{ color: isFolder ? "#eab308" : "var(--text-secondary)" }}>
+                        {isFolder ? <Folder size={24} fill="currentColor" fillOpacity={0.2} /> : <FileText size={24} />}
+                      </div>
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        {doc.type === 'spreadsheet' && (
+                          <button
+                            className="agent-btn"
+                            onClick={(e) => handleRunAgent(e, doc.id, 'financial-analyst')}
+                            style={{ opacity: 0, transition: "opacity 0.2s", background: "rgba(255,255,255,0.1)", border: "none", color: "#a855f7", cursor: "pointer", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
+                            title="Run Financial Analyst Agent"
+                          >
+                            <Sparkles size={12} /> Analyze
+                          </button>
+                        )}
+                        {(doc.type === 'document' || doc.type === 'pdf') && (
+                          <button
+                            className="agent-btn"
+                            onClick={(e) => handleRunAgent(e, doc.id, 'legal-reviewer')}
+                            style={{ opacity: 0, transition: "opacity 0.2s", background: "rgba(255,255,255,0.1)", border: "none", color: "#a855f7", cursor: "pointer", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
+                            title="Run Legal Reviewer Agent"
+                          >
+                            <Sparkles size={12} /> Review
+                          </button>
+                        )}
+                        <button
+                          className="trash-btn"
+                          onClick={(e) => handleDeleteClick(e, doc.id)}
+                          style={{
+                            opacity: 0,
+                            transition: "opacity 0.2s",
+                            background: "transparent",
+                            border: "none",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            padding: "4px"
+                          }}
+                          title="Delete Document"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <h3 style={{ fontSize: "0.95rem", fontWeight: 500, marginBottom: "4px" }}>{doc.name}</h3>
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                      {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
+                    </p>
+                  </>
+                );
+
+                const cardStyle = {
+                  aspectRatio: "3/4",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  textDecoration: "none",
+                  color: "inherit",
+                  display: "flex",
+                  flexDirection: "column" as const,
+                  transition: "border-color 0.2s",
+                  position: "relative" as const,
+                  cursor: "pointer"
+                };
+
+                const hoverHandlers = {
+                  onMouseOver: (e: React.MouseEvent<HTMLElement>) => {
+                    e.currentTarget.style.borderColor = isFolder ? "#eab308" : "var(--text-primary)";
+                    const trashBtn = e.currentTarget.querySelector('.trash-btn') as HTMLElement;
+                    if(trashBtn) trashBtn.style.opacity = "1";
+                    const agentBtn = e.currentTarget.querySelector('.agent-btn') as HTMLElement;
+                    if(agentBtn) agentBtn.style.opacity = "1";
+                  },
+                  onMouseOut: (e: React.MouseEvent<HTMLElement>) => {
+                    e.currentTarget.style.borderColor = "var(--border-color)";
+                    const trashBtn = e.currentTarget.querySelector('.trash-btn') as HTMLElement;
+                    if(trashBtn) trashBtn.style.opacity = "0";
+                    const agentBtn = e.currentTarget.querySelector('.agent-btn') as HTMLElement;
+                    if(agentBtn) agentBtn.style.opacity = "0";
+                  }
+                };
+
+                if (isFolder) {
+                  return (
+                    <div 
+                      key={doc.id} 
+                      style={cardStyle}
+                      {...hoverHandlers}
+                      onClick={() => {
+                        setCurrentFolderId(doc.id);
+                        setFolderHistory([...folderHistory, { id: doc.id, name: doc.name }]);
+                      }}
+                    >
+                      {cardContent}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Link 
+                    key={doc.id} 
+                    href={`/workspace/${activeWorkspace.id}/document/${doc.id}`} 
+                    style={cardStyle}
+                    {...hoverHandlers}
                   >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <h3 style={{ fontSize: "0.95rem", fontWeight: 500, marginBottom: "4px" }}>{doc.name}</h3>
-                <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                  {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
-                </p>
-              </Link>
-            )))}
+                    {cardContent}
+                  </Link>
+                );
+              })
+            )}
           </div>
 
           {!loadingDocs && documents.length === 0 && (
@@ -484,6 +772,101 @@ export default function DashboardPage() {
                 Upload
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Share Modal */}
+      {showShareModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, backdropFilter: "blur(4px)"
+        }}>
+          <div style={{
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-color)",
+            padding: "24px",
+            borderRadius: "12px",
+            width: "90%",
+            maxWidth: "400px",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.5)"
+          }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "8px", color: "var(--text-primary)" }}>
+              Share Workspace
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "24px" }}>
+              Invite a user to collaborate in {activeWorkspace?.name}.
+            </p>
+            
+            <form onSubmit={handleInvite}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "8px" }}>User Email</label>
+                <input 
+                  type="email"
+                  required
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  style={{
+                    width: "100%", padding: "10px 12px", borderRadius: "6px",
+                    border: "1px solid var(--border-color)", background: "rgba(255,255,255,0.02)",
+                    color: "var(--text-primary)", outline: "none"
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "8px" }}>Role</label>
+                <select 
+                  value={inviteRole}
+                  onChange={e => setInviteRole(e.target.value)}
+                  style={{
+                    width: "100%", padding: "10px 12px", borderRadius: "6px",
+                    border: "1px solid var(--border-color)", background: "var(--bg-secondary)",
+                    color: "var(--text-primary)", outline: "none", cursor: "pointer"
+                  }}
+                >
+                  <option value="editor">Editor (Can edit and comment)</option>
+                  <option value="viewer">Viewer (Read-only)</option>
+                  <option value="owner">Owner (Full access)</option>
+                </select>
+              </div>
+              
+              {inviteMessage && (
+                <p style={{ color: inviteMessage.type === "error" ? "#ef4444" : "#10b981", fontSize: "0.85rem", marginBottom: "16px" }}>
+                  {inviteMessage.text}
+                </p>
+              )}
+              
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                <button 
+                  type="button"
+                  onClick={() => setShowShareModal(false)}
+                  disabled={inviting}
+                  style={{
+                    padding: "8px 16px", borderRadius: "6px", border: "1px solid var(--border-color)",
+                    background: "transparent", color: "var(--text-primary)", cursor: inviting ? "not-allowed" : "pointer"
+                  }}
+                >
+                  Close
+                </button>
+                <button 
+                  type="submit"
+                  disabled={!inviteEmail || inviting}
+                  style={{
+                    padding: "8px 16px", borderRadius: "6px", border: "none",
+                    background: !inviteEmail || inviting ? "var(--border-color)" : "#a855f7", 
+                    color: !inviteEmail || inviting ? "var(--text-secondary)" : "#fff", 
+                    cursor: !inviteEmail || inviting ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", gap: "8px"
+                  }}
+                >
+                  {inviting && <Loader2 size={14} className="animate-spin" />}
+                  Invite
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
