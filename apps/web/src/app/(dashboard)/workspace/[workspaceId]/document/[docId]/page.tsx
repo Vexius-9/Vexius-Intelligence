@@ -88,8 +88,32 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     }
   };
 
+  const [editorConnector, setEditorConnector] = useState<any>(null);
+
   const onDocumentReady = () => {
     console.log("ONLYOFFICE Editor is ready");
+    if ((window as any).DocEditor && (window as any).DocEditor.instances["docxEditor"]) {
+      const connector = (window as any).DocEditor.instances["docxEditor"].createConnector();
+      setEditorConnector(connector);
+    }
+  };
+
+  const getCurrentSelection = (): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!editorConnector) {
+        resolve("");
+        return;
+      }
+      editorConnector.executeMethod("GetSelectedText", [], (text: string) => {
+        resolve(text || "");
+      });
+    });
+  };
+
+  const onApplyAction = (newText: string) => {
+    if (!editorConnector) return;
+    editorConnector.executeMethod("SetTrackRevisions", [true]);
+    editorConnector.executeMethod("PasteText", [newText]);
   };
 
   return (
@@ -202,10 +226,10 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
         <AICopilot 
           documentContext={{
             documentTitle: docMetadata?.name || "Untitled Document",
-            // For ONLYOFFICE, getting raw text requires plugin integration. 
-            // We'll pass empty for now.
-            documentContent: "" 
+            workspaceId: unwrappedParams.workspaceId
           }}
+          getCurrentSelection={getCurrentSelection}
+          onApplyAction={onApplyAction}
         />
 
       </div>

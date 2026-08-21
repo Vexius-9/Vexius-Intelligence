@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Send, Bot, Sparkles, ChevronDown } from "lucide-react";
+import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle } from "lucide-react";
 import { useChat } from "ai/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,12 +11,16 @@ interface AICopilotProps {
     selectedText?: string;
     documentTitle?: string;
     documentContent?: string;
+    workspaceId?: string;
   };
+  getCurrentSelection?: () => Promise<string>;
+  onApplyAction?: (text: string) => void;
 }
 
-export function AICopilot({ documentContext }: AICopilotProps) {
+export function AICopilot({ documentContext, getCurrentSelection, onApplyAction }: AICopilotProps) {
   const [selectedModel, setSelectedModel] = useState<"t1" | "t2">("t1"); // t1 = DeepSeek, t2 = Grok
   const [token, setToken] = useState<string>("");
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
 
   useEffect(() => {
     setToken(localStorage.getItem("vexius_token") || "");
@@ -36,6 +40,57 @@ export function AICopilot({ documentContext }: AICopilotProps) {
       { id: "1", role: "assistant", content: "I am your Vexius AI Copilot. How can I help you write today?" }
     ]
   });
+
+  const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar') => {
+    if (!getCurrentSelection || !onApplyAction) {
+      alert("Inline actions are not available in this context.");
+      return;
+    }
+
+    try {
+      setIsProcessingAction(true);
+      const text = await getCurrentSelection();
+      if (!text || text.trim() === "") {
+        alert("Please select some text in the document first.");
+        setIsProcessingAction(false);
+        return;
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/inline-action`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action,
+          text,
+          workspaceId: documentContext?.workspaceId
+        })
+      });
+
+      if (!res.ok) throw new Error("Action failed");
+      const data = await res.json();
+      
+      onApplyAction(data.result);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to execute action.");
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const overrideHandleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (getCurrentSelection) {
+      const text = await getCurrentSelection();
+      if (text && text.trim() !== "") {
+         if (documentContext) documentContext.selectedText = text;
+      }
+    }
+    handleSubmit(e);
+  };
 
   return (
     <div style={{
@@ -83,6 +138,23 @@ export function AICopilot({ documentContext }: AICopilotProps) {
             <option value="t2">Grok (T2)</option>
           </select>
         </div>
+      </div>
+
+      {/* Inline Actions Toolbar */}
+      <div style={{
+        display: "flex", gap: "8px", padding: "12px 24px",
+        borderBottom: "1px solid var(--border-color)",
+        background: "rgba(0,0,0,0.2)", flexWrap: "wrap"
+      }}>
+        <button onClick={() => handleInlineAction('rewrite')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+          <Edit3 size={12} /> Rewrite
+        </button>
+        <button onClick={() => handleInlineAction('summarize')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+          <Type size={12} /> Summarize
+        </button>
+        <button onClick={() => handleInlineAction('grammar')} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
+          <CheckCircle size={12} /> Grammar
+        </button>
       </div>
 
       {/* Messages Area */}
@@ -138,7 +210,7 @@ export function AICopilot({ documentContext }: AICopilotProps) {
 
       {/* Input Area */}
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)" }}>
-        <form onSubmit={handleSubmit} style={{
+        <form onSubmit={overrideHandleSubmit} style={{
           display: "flex",
           background: "var(--bg-primary)",
           border: "1px solid var(--border-color)",

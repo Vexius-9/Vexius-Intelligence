@@ -135,4 +135,40 @@ export class AiService {
 
     return result.toTextStreamResponse();
   }
+
+  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar', text: string, workspaceId?: string, userId?: string) {
+    const model = await this.getModel('openai:gpt-4o'); // Use default model for inline actions or extract from config
+
+    // @ts-ignore
+    const { generateText } = await Function('return import("ai")')();
+
+    let prompt = "";
+    if (action === 'rewrite') {
+      prompt = `You are a professional editor. Please rewrite the following text to improve its flow, clarity, and tone. Return ONLY the rewritten text without any quotes or explanations.\n\nText: ${text}`;
+    } else if (action === 'summarize') {
+      prompt = `You are an expert summarizer. Please summarize the following text concisely. Return ONLY the summarized text without any quotes or explanations.\n\nText: ${text}`;
+    } else if (action === 'grammar') {
+      prompt = `You are a strict grammar checker. Please fix any spelling, punctuation, or grammatical errors in the following text. Preserve the original meaning and tone as much as possible. Return ONLY the corrected text without any quotes or explanations.\n\nText: ${text}`;
+    } else {
+      throw new BadRequestException('Invalid action');
+    }
+
+    const result = await generateText({
+      model,
+      prompt,
+    });
+
+    if (workspaceId && userId) {
+      try {
+        await this.prisma.workspace.update({
+          where: { id: workspaceId },
+          data: { aiTokensUsed: { increment: result.usage?.totalTokens || 0 } }
+        });
+      } catch (e) {
+        this.logger.error('Failed to update token usage for inline action', e);
+      }
+    }
+
+    return { result: result.text };
+  }
 }

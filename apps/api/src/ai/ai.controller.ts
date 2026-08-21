@@ -54,4 +54,16 @@ export class AiController {
       return res.send('');
     }
   }
+
+  @Post('inline-action')
+  async inlineAction(
+    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar'; text: string; workspaceId?: string },
+    @Req() req: FastifyRequest
+  ) {
+    if (!body.action || !body.text) {
+      throw new Error('Action and text are required');
+    }
+    const user = (req as any).user;
+    return this.aiService.executeInlineAction(body.action, body.text, body.workspaceId, user?.id);
+  }
 }
