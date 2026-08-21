@@ -100,14 +100,31 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
 
   const getCurrentSelection = (): Promise<string> => {
     return new Promise((resolve) => {
-      if (!editorConnector || docMetadata?.type === 'pdf') {
+      if (!editorConnector) {
+        console.error("editorConnector is null");
         resolve("");
         return;
       }
+      if (docMetadata?.type === 'pdf') {
+        resolve("");
+        return;
+      }
+      
+      let callbackFired = false;
       try {
         editorConnector.executeMethod("GetSelectedText", [], (text: string) => {
+          callbackFired = true;
+          console.log("GetSelectedText callback fired with text:", text);
           resolve(text || "");
         });
+        
+        // Fallback timeout in case ONLYOFFICE API fails to invoke callback
+        setTimeout(() => {
+          if (!callbackFired) {
+            console.error("GetSelectedText callback timed out");
+            resolve("");
+          }
+        }, 1000);
       } catch (err) {
         console.error("ONLYOFFICE executeMethod error:", err);
         resolve("");

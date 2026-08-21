@@ -24,10 +24,25 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
   const [selectedModel, setSelectedModel] = useState<string>("openai:gpt-4o");
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [cachedSelection, setCachedSelection] = useState<string>("");
 
   useEffect(() => {
     setToken(localStorage.getItem("vexius_token") || "");
   }, []);
+  
+  // Cache the selection when the mouse enters the sidebar, BEFORE the iframe loses focus on click
+  const handleMouseEnter = async () => {
+    if (getCurrentSelection) {
+      try {
+        const text = await getCurrentSelection();
+        if (text && text.trim() !== "") {
+          setCachedSelection(text);
+        }
+      } catch (err) {
+        // ignore errors during silent cache
+      }
+    }
+  };
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, append, setMessages } = useChat({
     api: `${process.env.NEXT_PUBLIC_API_URL}/ai/chat`,
@@ -53,6 +68,11 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
     try {
       setIsProcessingAction(true);
       let text = await getCurrentSelection();
+      
+      // Fallback to cached selection if iframe lost focus and returned empty
+      if (!text || text.trim() === "") {
+        text = cachedSelection;
+      }
       
       if (!text || text.trim() === "") {
         if (action === 'summarize_pdf' || action === 'summarize' || action === 'slide_structure') {
@@ -123,15 +143,17 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      height: "100%",
-      borderLeft: "1px solid var(--border-color)",
-      background: "var(--bg-secondary)",
-      width: "320px",
-      minWidth: "320px"
-    }}>
+    <div 
+      onMouseEnter={handleMouseEnter}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        borderLeft: "1px solid var(--border-color)",
+        background: "var(--bg-secondary)",
+        width: "320px",
+        minWidth: "320px"
+      }}>
       {/* Header */}
       <div style={{
         padding: "16px 24px",
