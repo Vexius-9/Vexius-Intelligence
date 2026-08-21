@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { VexiusEditorShell } from "@/components/editor/VexiusEditorShell";
 import { VexiusDocEditor, VexiusDocEditorRef } from "@/components/editor/docs/VexiusDocEditor";
 import { VexiusSheetEditor, VexiusSheetEditorRef } from '@/components/editor/sheets/VexiusSheetEditor';
+import { VexiusPdfEditor, VexiusPdfEditorRef } from '@/components/editor/pdf/VexiusPdfEditor';
+import { VexiusSlideEditor, VexiusSlideEditorRef } from '@/components/editor/slides/VexiusSlideEditor';
 
 export default function DocumentPage({ params }: { params: Promise<{ workspaceId: string; docId: string }> }) {
   const unwrappedParams = React.use(params);
@@ -15,6 +17,8 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
 
   const docEditorRef = useRef<VexiusDocEditorRef>(null);
   const sheetEditorRef = useRef<VexiusSheetEditorRef>(null);
+  const pdfEditorRef = useRef<VexiusPdfEditorRef>(null);
+  const slideEditorRef = useRef<VexiusSlideEditorRef>(null);
 
   useEffect(() => {
     const initDocument = async () => {
@@ -77,6 +81,14 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
       if (sheetEditorRef.current && sheetEditorRef.current.getCurrentSelection) {
         return sheetEditorRef.current.getCurrentSelection();
       }
+    } else if (docMetadata?.type === 'presentation') {
+      if (slideEditorRef.current && slideEditorRef.current.getCurrentSelection) {
+        return slideEditorRef.current.getCurrentSelection();
+      }
+    } else if (docMetadata?.type === 'pdf') {
+      if (pdfEditorRef.current && pdfEditorRef.current.getCurrentSelection) {
+        return pdfEditorRef.current.getCurrentSelection();
+      }
     } else {
       if (docEditorRef.current && docEditorRef.current.getCurrentSelection) {
         return docEditorRef.current.getCurrentSelection();
@@ -90,6 +102,14 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
       if (sheetEditorRef.current && sheetEditorRef.current.getFullText) {
         return sheetEditorRef.current.getFullText();
       }
+    } else if (docMetadata?.type === 'presentation') {
+      if (slideEditorRef.current && slideEditorRef.current.getFullText) {
+        return slideEditorRef.current.getFullText();
+      }
+    } else if (docMetadata?.type === 'pdf') {
+      if (pdfEditorRef.current && pdfEditorRef.current.getFullText) {
+        return pdfEditorRef.current.getFullText();
+      }
     } else {
       if (docEditorRef.current && docEditorRef.current.getFullText) {
         return docEditorRef.current.getFullText();
@@ -102,6 +122,14 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
     if (docMetadata?.type === 'spreadsheet' || docMetadata?.type === 'xlsx') {
       if (sheetEditorRef.current) {
         sheetEditorRef.current.applyAction(newText);
+      }
+    } else if (docMetadata?.type === 'presentation') {
+      if (slideEditorRef.current) {
+        slideEditorRef.current.applyAction(newText);
+      }
+    } else if (docMetadata?.type === 'pdf') {
+      if (pdfEditorRef.current) {
+        pdfEditorRef.current.applyAction(newText);
       }
     } else {
       if (docEditorRef.current) {
@@ -143,6 +171,10 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
       case 'spreadsheet':
       case 'xlsx':
         return <VexiusSheetEditor ref={sheetEditorRef} documentId={docMetadata.id} initialContent={docContent} />;
+      case 'presentation':
+        return <VexiusSlideEditor ref={slideEditorRef} documentId={docMetadata.id} initialContent={docContent} />;
+      case 'pdf':
+        return <VexiusPdfEditor ref={pdfEditorRef} documentId={docMetadata.id} />;
       default:
         return <div>Unsupported document type</div>;
     }
