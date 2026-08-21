@@ -49,12 +49,13 @@ export class DocumentsController {
   async createDocument(
     @Body('workspaceId') workspaceId: string,
     @Body('name') name: string,
+    @Body('type') type: 'document' | 'spreadsheet' | 'presentation',
     @CurrentUser() user: any
   ) {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId is required');
     }
-    return this.documentsService.createBlankDocument(user.id, workspaceId, name);
+    return this.documentsService.createBlankDocument(user.id, workspaceId, name, type || 'document');
   }
 
   @Get('workspace/:workspaceId')

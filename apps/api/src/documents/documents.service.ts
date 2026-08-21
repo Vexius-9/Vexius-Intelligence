@@ -154,7 +154,7 @@ export class DocumentsService {
     }
   }
 
-  async createBlankDocument(userId: string, workspaceId: string, name: string) {
+  async createBlankDocument(userId: string, workspaceId: string, name: string, docType: 'document' | 'spreadsheet' | 'presentation' = 'document') {
     // 1. Verify membership
     const membership = await this.prisma.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
@@ -164,14 +164,43 @@ export class DocumentsService {
       throw new UnauthorizedException('Not authorized to create documents in this workspace');
     }
 
-    // 2. Create default content buffer
-    const defaultContent = '<p>Start writing here...</p>';
-    const fileBuffer = Buffer.from(defaultContent, 'utf-8');
-    const mimeType = 'text/html';
+    // 2. Load template buffer and metadata
+    let fileBuffer: Buffer;
+    let mimeType: string;
+    let extension: string;
+    
+    if (docType === 'spreadsheet') {
+      const { EMPTY_XLSX } = require('./templates');
+      fileBuffer = Buffer.from(EMPTY_XLSX, 'base64');
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      extension = 'xlsx';
+    } else if (docType === 'presentation') {
+      const { EMPTY_PPTX } = require('./templates');
+      fileBuffer = Buffer.from(EMPTY_PPTX, 'base64');
+      mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      extension = 'pptx';
+    } else {
+      const { EMPTY_DOCX } = require('./templates');
+      fileBuffer = Buffer.from(EMPTY_DOCX, 'base64');
+      mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      extension = 'docx';
+    }
+
+    // Ensure name has the correct extension if not provided
+    let finalName = name || `Untitled ${docType}`;
+    if (!finalName.endsWith(`.${extension}`)) {
+        // If it has a different extension, let's just append or replace
+        const extMatch = finalName.match(/\.([^.]+)$/);
+        if (extMatch) {
+            finalName = finalName.replace(extMatch[0], `.${extension}`);
+        } else {
+            finalName = `${finalName}.${extension}`;
+        }
+    }
 
     // 3. Setup document in DB
     const documentId = require('crypto').randomUUID();
-    const storagePath = `workspaces/${workspaceId}/documents/${documentId}/versions/1-blank.html`;
+    const storagePath = `workspaces/${workspaceId}/documents/${documentId}/versions/1-blank.${extension}`;
 
     // 4. Upload to storage
     await this.storageClient.uploadFile('vexius-documents', storagePath, fileBuffer, mimeType);
@@ -183,8 +212,8 @@ export class DocumentsService {
           id: documentId,
           workspaceId,
           ownerId: userId,
-          name: name || 'Untitled Document',
-          type: 'document',
+          name: finalName,
+          type: docType,
           mimeType,
           storageKey: storagePath,
           size: fileBuffer.length,

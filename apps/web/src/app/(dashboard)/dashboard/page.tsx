@@ -122,6 +122,42 @@ export default function DashboardPage() {
     }
   };
 
+  const createNewDocument = async (type: 'document' | 'spreadsheet' | 'presentation') => {
+    if (!activeWorkspaceId) return;
+    if (creating) return;
+
+    setCreating(true);
+    try {
+      const token = localStorage.getItem("vexius_token");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      const res = await fetch(`${apiUrl}/documents/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          workspaceId: activeWorkspaceId,
+          name: `Untitled ${type}`,
+          type
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to create document");
+      const newDoc = await res.json();
+      
+      setDocuments(docs => [newDoc, ...docs]); // add to beginning
+      
+      router.push(`/workspace/${activeWorkspaceId}/document/${newDoc.id}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create new document.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleDeleteClick = (e: React.MouseEvent, docId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -188,30 +224,61 @@ export default function DashboardPage() {
             gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", 
             gap: "16px" 
           }}>
+            {/* New Word Card */}
+            <div 
+              onClick={() => createNewDocument('document')}
+              style={{
+                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "#3b82f6", transition: "all 0.2s" // Blue for Word
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.background = "rgba(59, 130, 246, 0.05)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
+            >
+              <Plus size={32} style={{ marginBottom: "8px" }} />
+              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New Word</span>
+            </div>
+
+            {/* New Excel Card */}
+            <div 
+              onClick={() => createNewDocument('spreadsheet')}
+              style={{
+                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "#10b981", transition: "all 0.2s" // Green for Excel
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#10b981"; e.currentTarget.style.background = "rgba(16, 185, 129, 0.05)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
+            >
+              <Plus size={32} style={{ marginBottom: "8px" }} />
+              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New Excel</span>
+            </div>
+
+            {/* New PowerPoint Card */}
+            <div 
+              onClick={() => createNewDocument('presentation')}
+              style={{
+                aspectRatio: "3/4", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "#f97316", transition: "all 0.2s" // Orange for PowerPoint
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = "#f97316"; e.currentTarget.style.background = "rgba(249, 115, 22, 0.05)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
+            >
+              <Plus size={32} style={{ marginBottom: "8px" }} />
+              <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>New PowerPoint</span>
+            </div>
+
             {/* Upload Document Card */}
             <div 
               onClick={handleUploadClick}
               style={{
-                aspectRatio: "3/4",
-                background: "transparent",
-                border: "1px dashed var(--border-color)",
-                borderRadius: "8px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "var(--text-secondary)",
-                transition: "all 0.2s"
+                aspectRatio: "3/4", background: "transparent", border: "1px dashed var(--border-color)", borderRadius: "8px",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "var(--text-secondary)", transition: "all 0.2s"
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = "var(--text-primary)";
-                e.currentTarget.style.color = "var(--text-primary)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-color)";
-                e.currentTarget.style.color = "var(--text-secondary)";
-              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = "var(--text-primary)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             >
               <Plus size={32} style={{ marginBottom: "8px" }} />
               <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>Upload Document</span>
