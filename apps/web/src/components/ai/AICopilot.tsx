@@ -78,14 +78,13 @@ export function AICopilot({ documentContext, getCurrentSelection, onApplyAction 
         if (action === 'summarize_pdf' || action === 'summarize' || action === 'slide_structure') {
           text = documentContext?.documentContent || "";
         }
-      }
-      
-      // For grammar, rewrite, and formula generation, text is absolutely REQUIRED.
-      // If it's empty, we must not fallback to document content because it will replace the user's document!
-      if ((!text || text.trim() === "") && ['grammar', 'rewrite', 'generate_formula'].includes(action)) {
-        toast.error("Please block/select the text you want to use for this action.");
-        setIsProcessingAction(false);
-        return;
+        
+        // For grammar, rewrite, and formula generation, text is absolutely REQUIRED.
+        if ((!text || text.trim() === "") && ['grammar', 'rewrite', 'generate_formula'].includes(action)) {
+          toast.error("ONLYOFFICE membatasi akses teks dari luar. Silakan gunakan tab 'Plugins' -> 'ChatGPT/AI' bawaan ONLYOFFICE di toolbar atas untuk aksi ini (Anda bisa memasukkan API Key di sana).", { duration: 6000 });
+          setIsProcessingAction(false);
+          return;
+        }
       }
 
       // General fallback if text is still empty and we have no documentId

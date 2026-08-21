@@ -371,7 +371,8 @@ export class DocumentsService {
         mode: membership.role === 'viewer' ? 'view' : 'edit',
         customization: {
           forcesave: true,
-          comments: true
+          comments: true,
+          plugins: true
         }
       },
       permissions: {
