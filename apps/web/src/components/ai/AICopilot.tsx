@@ -58,7 +58,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       context: documentContext
     },
     initialMessages: [
-      { id: "1", role: "assistant", content: "I am your Vexius AI Copilot. How can I help you write today?" }
+      { id: "1", role: "assistant", content: "I am Vexius Intelligence. How can I help you today?" }
     ]
   });
 
@@ -211,16 +211,11 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         borderBottom: "1px solid var(--border-color)",
         display: "flex",
         alignItems: "center",
-        gap: "12px"
+        justifyContent: "space-between",
+        background: '#f8fafc',
+        color: '#475569'
       }}>
-        <div style={{
-          width: "28px", height: "28px", background: "rgba(255,255,255,0.1)",
-          borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center"
-        }}>
-          <Bot size={16} color="#fff" />
-        </div>
-        <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Copilot</span>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", justifyContent: "space-between" }}>
           <select 
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value as "t1" | "t2")}
@@ -241,57 +236,13 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             <option value="xai:grok-beta">X.AI Grok</option>
             <option value="deepseek:deepseek-chat">DeepSeek</option>
           </select>
-        </div>
-      </div>
-
-      {/* Inline Actions Toolbar */}
-      <div style={{
-        display: "flex", gap: "8px", padding: "12px 24px",
-        borderBottom: "1px solid var(--border-color)",
-        background: "rgba(0,0,0,0.2)", flexWrap: "wrap"
-      }}>
-        {documentContext?.documentType === 'spreadsheet' ? (
-          <>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('generate_formula'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <Sparkles size={12} /> Generate Formula
-            </button>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('explain_formula'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <CheckCircle size={12} /> Explain Formula
-            </button>
-            <button onMouseDown={(e) => { e.preventDefault(); handleRunFinancialAnalyst(); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(168, 85, 247, 0.1)", border: "1px solid rgba(168, 85, 247, 0.3)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "#a855f7", fontWeight: 600 }}>
-              <BarChart size={12} /> Run Analysis
-            </button>
-          </>
-        ) : documentContext?.documentType === 'presentation' ? (
-          <>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('slide_structure'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <Sparkles size={12} /> Structure Slide
-            </button>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('summarize'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <Type size={12} /> Summarize Slide
-            </button>
-          </>
-        ) : documentContext?.documentType === 'pdf' ? (
-          <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('summarize_pdf'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-            <Type size={12} /> Summarize PDF
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('vexius:toggle-ai'))}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', fontSize: '14px', display: 'flex', alignItems: 'center' }}
+          >
+            ✕
           </button>
-        ) : documentContext?.documentType === 'document' ? (
-          <>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('rewrite'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <Edit3 size={12} /> Rewrite
-            </button>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('summarize'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <Type size={12} /> Summarize
-            </button>
-            <button onMouseDown={(e) => { e.preventDefault(); handleInlineAction('grammar'); }} disabled={isProcessingAction} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", padding: "4px 8px", borderRadius: "4px", cursor: isProcessingAction ? "not-allowed" : "pointer", color: "var(--text-primary)" }}>
-              <CheckCircle size={12} /> Fix Grammar
-            </button>
-          </>
-        ) : (
-          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
-            Loading AI actions...
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Messages Area */}

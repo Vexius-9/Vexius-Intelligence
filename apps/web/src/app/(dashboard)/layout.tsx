@@ -45,7 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
               <span>Dashboard</span>
               <ChevronRight size={14} />
-              <span style={{ color: "#fff" }}>Workspaces</span>
+              <Link href="/dashboard" style={{ color: "inherit", textDecoration: "none" }}>Workspaces</Link>
+              <div id="breadcrumb-portal-target" style={{ display: "flex", alignItems: "center", gap: "8px" }}></div>
             </div>
           </div>
           

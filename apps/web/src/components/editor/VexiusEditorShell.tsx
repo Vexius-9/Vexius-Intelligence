@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Bot } from 'lucide-react';
+import { ArrowLeft, Loader2, Bot, ChevronRight } from 'lucide-react';
 import { AICopilot } from '@/components/ai/AICopilot';
 
 interface VexiusEditorShellProps {
@@ -35,11 +36,25 @@ export function VexiusEditorShell({
   const [isRenaming, setIsRenaming] = useState(false);
   const [editName, setEditName] = useState(documentName);
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sync state when props change
   React.useEffect(() => {
     setEditName(documentName);
   }, [documentName]);
+
+  React.useEffect(() => {
+    const handleToggleAI = () => setIsCopilotVisible(prev => !prev);
+    const handleFullscreen = (e: any) => setIsFullscreen(e.detail);
+    
+    window.addEventListener('vexius:toggle-ai', handleToggleAI);
+    window.addEventListener('vexius:fullscreen', handleFullscreen);
+    
+    return () => {
+      window.removeEventListener('vexius:toggle-ai', handleToggleAI);
+      window.removeEventListener('vexius:fullscreen', handleFullscreen);
+    };
+  }, []);
 
   const handleRenameSubmit = async () => {
     setIsRenaming(false);
@@ -58,108 +73,84 @@ export function VexiusEditorShell({
       setEditName(documentName);
     }
   };
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.getElementById('breadcrumb-portal-target'));
+  }, []);
+
+  const breadcrumbPortal = portalTarget && !isFullscreen ? createPortal(
+    <>
+      <ChevronRight size={14} />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        {isRenaming ? (
+          <input 
+            autoFocus
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={handleKeyDown}
+            style={{
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border-color)",
+              color: "var(--text-primary)",
+              padding: "2px 8px",
+              borderRadius: "4px",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              outline: "none",
+              width: "150px"
+            }}
+          />
+        ) : (
+          <span 
+            onClick={() => setIsRenaming(true)}
+            style={{ 
+              fontWeight: 500, 
+              fontSize: "0.85rem", 
+              cursor: "pointer",
+              padding: "2px 8px",
+              marginLeft: "-8px",
+              borderRadius: "4px",
+              transition: "background 0.2s",
+              color: "#fff"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = "var(--bg-secondary)"}
+            onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
+            title="Click to rename"
+          >
+            {documentName || "Untitled Document"}
+          </span>
+        )}
+      </div>
+    </>,
+    portalTarget
+  ) : null;
+
+  const navbarElement = null; // Removing it from Ribbon
+
 
   return (
     <div style={{
       display: "flex",
       flexDirection: "column",
-      height: "calc(100vh - 64px)", // 64px is the height of the Dashboard Header
-      margin: "-32px", // Negate the padding from the dashboard layout to make editor full width
+      height: "calc(100vh - 64px)",
+      margin: "-32px",
       background: "var(--bg-primary)",
+      position: "relative",
+      ...(isFullscreen ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        height: '100vh',
+        margin: 0,
+      } : {})
     }}>
-      {/* Document Sub-header */}
-      <div style={{
-        padding: "16px 24px",
-        borderBottom: "1px solid var(--border-color)",
-        display: "flex",
-        alignItems: "center",
-        gap: "16px"
-      }}>
-        <Link href={`/workspace/${workspaceId}`} style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", transition: "color 0.2s" }}
-          onMouseOver={(e) => e.currentTarget.style.color = "var(--text-primary)"}
-          onMouseOut={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
-        >
-          <ArrowLeft size={18} />
-        </Link>
-        
-        {/* Breadcrumb / Title */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {isRenaming ? (
-            <input 
-              autoFocus
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleRenameSubmit}
-              onKeyDown={handleKeyDown}
-              style={{
-                background: "transparent",
-                border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "0.95rem",
-                fontWeight: 500,
-                outline: "none",
-                width: "300px"
-              }}
-            />
-          ) : (
-            <span 
-              onClick={() => setIsRenaming(true)}
-              style={{ 
-                fontWeight: 500, 
-                fontSize: "0.95rem", 
-                cursor: "pointer",
-                padding: "4px 8px",
-                marginLeft: "-8px", // visual alignment
-                borderRadius: "4px",
-                transition: "background 0.2s"
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = "var(--bg-secondary)"}
-              onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
-              title="Click to rename"
-            >
-              {documentName || "Untitled Document"}
-            </span>
-          )}
-        </div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "12px" }}>
-          <button 
-            onClick={() => setIsCopilotVisible(!isCopilotVisible)}
-            style={{
-              background: isCopilotVisible ? "rgba(168, 85, 247, 0.1)" : "transparent",
-              color: isCopilotVisible ? "#a855f7" : "var(--text-secondary)",
-              border: `1px solid ${isCopilotVisible ? "rgba(168, 85, 247, 0.2)" : "var(--border-color)"}`,
-              padding: "6px 12px",
-              borderRadius: "6px",
-              fontWeight: 500,
-              fontSize: "0.85rem",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.2s"
-            }}
-          >
-            <Bot size={16} />
-            {isCopilotVisible ? "Hide Copilot" : "Show Copilot"}
-          </button>
-          
-          <button style={{
-            background: "#fff",
-            color: "#000",
-            border: "none",
-            padding: "6px 16px",
-            borderRadius: "6px",
-            fontWeight: 600,
-            fontSize: "0.85rem",
-            cursor: "pointer"
-          }}>
-            Share
-          </button>
-        </div>
-      </div>
-
+      {breadcrumbPortal}
+      
       {/* Editor & Copilot Container */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         
@@ -170,27 +161,32 @@ export function VexiusEditorShell({
               <Loader2 className="animate-spin" />
             </div>
           ) : (
-            children
+            React.isValidElement(children) ? React.cloneElement(children as any, {
+              navbarElement,
+              documentName,
+              sidebar: (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <AICopilot 
+                      documentContext={{
+                        documentTitle: documentName || "Untitled Document",
+                        workspaceId: workspaceId,
+                        documentId: documentId,
+                        documentType: documentType
+                      }}
+                      getCurrentSelection={getCurrentSelection}
+                      getFullText={getFullText}
+                      onApplyAction={onApplyAction}
+                      onAiStart={onAiStart}
+                      onAiEnd={onAiEnd}
+                    />
+                  </div>
+                </div>
+              )
+            }) : children
           )}
         </div>
-
-        {/* AI Copilot Sidebar */}
-        <div style={{ display: isCopilotVisible ? 'flex' : 'none', flexShrink: 0 }}>
-          <AICopilot 
-            documentContext={{
-              documentTitle: documentName || "Untitled Document",
-              workspaceId: workspaceId,
-              documentId: documentId,
-              documentType: documentType
-            }}
-            getCurrentSelection={getCurrentSelection}
-            getFullText={getFullText}
-            onApplyAction={onApplyAction}
-            onAiStart={onAiStart}
-            onAiEnd={onAiEnd}
-          />
-        </div>
-
       </div>
     </div>
   );

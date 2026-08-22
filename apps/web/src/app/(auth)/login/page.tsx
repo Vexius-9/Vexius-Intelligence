@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useRouter } from "next/navigation";
@@ -15,9 +15,11 @@ export default function LoginPage() {
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const hasRequestedRef = useRef(false);
 
   useEffect(() => {
-    if (connected && publicKey && signMessage) {
+    if (connected && publicKey && signMessage && !hasRequestedRef.current) {
+      hasRequestedRef.current = true;
       setVerifying(true);
       setError(null);
 
@@ -62,6 +64,7 @@ export default function LoginPage() {
         } catch (err: any) {
           console.error(err);
           setError(err.message || "Authentication failed.");
+          hasRequestedRef.current = false; // allow retry
           disconnect(); // Disconnect if failed so they can try again
         } finally {
           setVerifying(false);
