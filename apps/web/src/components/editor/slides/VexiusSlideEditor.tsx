@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { VexiusSlideRibbon } from './VexiusSlideRibbon';
+import { Paperclip, CornerDownLeft } from 'lucide-react';
 
 export interface VexiusSlideEditorProps {
   documentId: string;
   initialContent?: any;
+  navbarElement?: React.ReactNode;
+  sidebar?: React.ReactNode;
 }
 
 export interface VexiusSlideEditorRef {
@@ -11,11 +15,20 @@ export interface VexiusSlideEditorRef {
   applyAction: (text: string) => void;
 }
 
-export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEditorProps>(({ documentId, initialContent }, ref) => {
+export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEditorProps>(({ documentId, initialContent, navbarElement, sidebar }, ref) => {
   const [slides, setSlides] = useState<string[]>(['<h1>Welcome to Vexius Slides</h1><p>Edit me...</p>']);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isCopilotVisible, setIsCopilotVisible] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState(83);
+  
   const slideRef = useRef<HTMLDivElement>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleToggleAI = () => setIsCopilotVisible(prev => !prev);
+    window.addEventListener('vexius:toggle-ai', handleToggleAI as EventListener);
+    return () => window.removeEventListener('vexius:toggle-ai', handleToggleAI as EventListener);
+  }, []);
 
   useEffect(() => {
     if (initialContent) {
@@ -87,37 +100,163 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f3f4f6' }}>
-      <div style={{ padding: '16px', background: '#fff', borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '16px', alignItems: 'center' }}>
-        <button onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))} disabled={currentSlideIndex === 0} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
-          Prev
-        </button>
-        <span style={{ fontWeight: 600 }}>Slide {currentSlideIndex + 1} of {slides.length}</span>
-        <button onClick={() => setCurrentSlideIndex(Math.min(slides.length - 1, currentSlideIndex + 1))} disabled={currentSlideIndex === slides.length - 1} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
-          Next
-        </button>
-        <button onClick={addSlide} style={{ padding: '8px 16px', background: '#000', color: '#fff', borderRadius: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-          + Add Slide
-        </button>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', background: '#f3f4f6' }}>
       
-      <div style={{ flex: 1, padding: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto' }}>
-        <div 
-          ref={slideRef}
-          contentEditable
-          onInput={handleInput}
-          suppressContentEditableWarning
-          dangerouslySetInnerHTML={{ __html: slides[currentSlideIndex] }}
-          style={{ 
-            width: '800px', 
-            height: '450px', 
+      {/* Top Ribbon */}
+      <VexiusSlideRibbon navbarElement={navbarElement} />
+
+      {/* Main Area: Thumbnails + Canvas + Copilot */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        
+        {/* Left Thumbnails Pane */}
+        <div style={{ 
+          width: '200px', 
+          background: '#f9fafb', 
+          borderRight: '1px solid #e5e7eb', 
+          display: 'flex', 
+          flexDirection: 'column',
+          overflowY: 'auto',
+          padding: '16px 0'
+        }}>
+          {slides.map((s, index) => (
+            <div 
+              key={index}
+              onClick={() => setCurrentSlideIndex(index)}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                background: currentSlideIndex === index ? '#f3f4f6' : 'transparent',
+              }}
+            >
+              <div style={{ width: '20px', fontSize: '12px', color: '#6b7280', paddingTop: '4px' }}>
+                {index + 1}
+              </div>
+              <div style={{ 
+                flex: 1, 
+                aspectRatio: '16/9', 
+                background: '#fff', 
+                border: currentSlideIndex === index ? '2px solid #ea580c' : '1px solid #d1d5db',
+                borderRadius: '4px',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <div 
+                  dangerouslySetInnerHTML={{ __html: s }} 
+                  style={{ transform: 'scale(0.15)', transformOrigin: 'top left', width: '666%', height: '666%', padding: '20px', color: '#000' }} 
+                />
+              </div>
+            </div>
+          ))}
+          <button 
+            onClick={addSlide} 
+            style={{ margin: '16px', padding: '8px', border: '1px dashed #d1d5db', borderRadius: '4px', background: 'transparent', cursor: 'pointer', color: '#6b7280' }}
+          >
+            + Add Slide
+          </button>
+        </div>
+
+        {/* Center Canvas */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto', position: 'relative' }}>
+          
+          {/* Decorative Badge on Canvas Area (like Vantis UI) */}
+          <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', padding: '4px 8px', borderRadius: '4px', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>
+             <div style={{ background: '#10b981', color: '#fff', padding: '2px', borderRadius: '4px' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="m19 12-7 7"/></svg>
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Vexius AI</span>
+          </div>
+
+          <div style={{ 
+            width: '960px', 
+            height: '540px', 
             background: '#fff', 
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', 
-            padding: '40px',
-            outline: 'none',
-            fontSize: '1.5rem'
-          }}
-        />
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', 
+            transform: `scale(${zoomLevel / 100})`,
+            transformOrigin: 'center center',
+            display: 'flex'
+          }}>
+            <div 
+              ref={slideRef}
+              contentEditable
+              onInput={handleInput}
+              suppressContentEditableWarning
+              dangerouslySetInnerHTML={{ __html: slides[currentSlideIndex] }}
+              style={{ 
+                flex: 1,
+                padding: '48px',
+                outline: 'none',
+                fontSize: '1.5rem',
+                overflow: 'hidden',
+                color: '#000'
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right Sidebar (AI Copilot) */}
+        {isCopilotVisible && sidebar && (
+          <div style={{ 
+            width: '320px', 
+            flexShrink: 0, 
+            background: '#fff', 
+            borderLeft: '1px solid #e5e7eb',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            {sidebar}
+          </div>
+        )}
+
+      </div>
+
+      {/* Status Bar */}
+      <div style={{
+        background: '#f3f4f6',
+        borderTop: '1px solid #e5e7eb',
+        padding: '2px 16px',
+        fontSize: '11px',
+        color: '#6b7280',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: '24px',
+        flexShrink: 0
+      }}>
+        {/* Left Side */}
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <span>Slide {currentSlideIndex + 1} of {slides.length}</span>
+        </div>
+        
+        {/* Right Side */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280' }}>Notes</button>
+          
+          <button 
+            onClick={() => setZoomLevel(z => Math.max(z - 10, 50))} 
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280', fontSize: '14px', padding: 0, width: '16px', marginLeft: '16px' }}
+          >
+            −
+          </button>
+          <input 
+            type="range" 
+            min="50" 
+            max="150" 
+            value={zoomLevel} 
+            onChange={(e) => setZoomLevel(Number(e.target.value))}
+            style={{ width: '80px', accentColor: '#6b7280' }}
+          />
+          <button 
+            onClick={() => setZoomLevel(z => Math.min(z + 10, 150))} 
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280', fontSize: '14px', padding: 0, width: '16px' }}
+          >
+            +
+          </button>
+          <span style={{ width: '32px', textAlign: 'right' }}>{zoomLevel}%</span>
+        </div>
       </div>
     </div>
   );
