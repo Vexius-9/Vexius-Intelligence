@@ -16,6 +16,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const hasRequestedRef = useRef(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (connected && publicKey && signMessage && !hasRequestedRef.current) {
@@ -159,13 +164,17 @@ export default function LoginPage() {
               Verifying holdings...
             </div>
           ) : (
-            <WalletMultiButton style={{ 
-              background: "#ffffff", 
-              color: "#000000", 
-              fontWeight: 600,
-              fontFamily: "inherit",
-              borderRadius: "8px" 
-            }} />
+            mounted ? (
+              <WalletMultiButton style={{ 
+                background: "#ffffff", 
+                color: "#000000", 
+                fontWeight: 600,
+                fontFamily: "inherit",
+                borderRadius: "8px" 
+              }} />
+            ) : (
+              <div style={{ width: "160px", height: "48px", background: "rgba(255,255,255,0.1)", borderRadius: "8px" }} />
+            )
           )}
         </div>
       </motion.div>
