@@ -22,6 +22,24 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
   const [isFileMenuOpen, setIsFileMenuOpen] = React.useState(false);
   const [activeFileMenuTab, setActiveFileMenuTab] = React.useState('Info');
   const [activeSubmenu, setActiveSubmenu] = React.useState<string | null>(null);
+  
+  const [isAutoSave, setIsAutoSave] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vexius_autosave');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+
+  const toggleAutoSave = () => {
+    const newState = !isAutoSave;
+    setIsAutoSave(newState);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vexius_autosave', JSON.stringify(newState));
+      window.dispatchEvent(new CustomEvent('vexius:autosave-toggle', { detail: newState }));
+    }
+    toast.success(`AutoSave is now ${newState ? 'ON' : 'OFF'}`);
+  };
 
   if (!editor) {
     return <div style={{ height: '120px', borderBottom: '1px solid var(--border-color)' }}></div>;
@@ -209,13 +227,16 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
             </button>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ 
-                width: '32px', height: '18px', background: '#2563eb', borderRadius: '9px', 
-                position: 'relative', cursor: 'pointer' 
-              }}>
+              <div 
+                onClick={toggleAutoSave}
+                style={{ 
+                  width: '32px', height: '18px', background: isAutoSave ? '#2563eb' : '#cbd5e1', borderRadius: '9px', 
+                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+                }}>
                 <div style={{ 
                   width: '14px', height: '14px', background: '#fff', borderRadius: '50%', 
-                  position: 'absolute', top: '2px', right: '2px' 
+                  position: 'absolute', top: '2px', right: isAutoSave ? '2px' : '16px',
+                  transition: 'right 0.2s'
                 }} />
               </div>
               <span style={{ fontSize: '0.85rem', color: '#4b5563', fontWeight: 500 }}>AutoSave</span>

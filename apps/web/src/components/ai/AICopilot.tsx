@@ -317,7 +317,20 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
               {msg.role === "assistant" && msg.id !== "1" && (
                 <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                   <button 
-                    onClick={() => onApplyAction && onApplyAction(msg.content.replace(/^\*\*.*?\*\*\n\n/, ''))} 
+                    onClick={() => {
+                      if (onApplyAction) {
+                        let text = msg.content.replace(/^\*\*.*?\*\*\n\n/, ''); // Remove title like **Summary**
+                        // Basic markdown to HTML
+                        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                        text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                        text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+                        text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+                        // Handle paragraphs, avoiding empty ones
+                        text = text.split('\n\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+                        onApplyAction(text);
+                      }
+                    }} 
                     style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}>
                     <CheckCircle size={14} /> Apply to Document
                   </button>

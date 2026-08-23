@@ -73,6 +73,12 @@ export class AiService {
       }
     }
 
+    prompt += `\n\nIMPORTANT RULES FOR YOUR RESPONSES:\n`;
+    prompt += `1. When the user asks you to write, rewrite, or generate content for the document, output ONLY the content itself.\n`;
+    prompt += `2. DO NOT include conversational filler like "Here is the story...", "I hope you like this...", or "Let me know if...".\n`;
+    prompt += `3. DO NOT wrap your response in markdown code blocks or blockquotes unless specifically asked to write code.\n`;
+    prompt += `4. DO NOT use horizontal rules ('---') to separate your response from filler, just don't write filler.\n`;
+
     return prompt;
   }
 

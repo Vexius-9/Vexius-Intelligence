@@ -42,6 +42,10 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
 
   const handleUpdate = (content: string) => {
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    
+    const isAutoSave = localStorage.getItem('vexius_autosave') !== 'false';
+    if (!isAutoSave) return;
+
     autosaveTimerRef.current = setTimeout(async () => {
       try {
         const token = localStorage.getItem("vexius_token");
