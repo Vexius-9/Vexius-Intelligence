@@ -84,7 +84,33 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
       if (!hotInstance) return;
       
       try {
-        // Find JSON block in text
+        // 1. Try to parse Markdown Table for templates
+        const lines = text.split('\n');
+        const tableLines = lines.filter(line => line.trim().startsWith('|') && line.trim().endsWith('|'));
+        if (tableLines.length > 0) {
+          const data2D = [];
+          for (const line of tableLines) {
+            // Ignore separator lines like |---|---|
+            if (line.match(/^\|[\s\-\|:]+\|$/)) continue;
+            const cols = line.split('|').slice(1, -1).map(c => c.trim());
+            data2D.push(cols);
+          }
+          
+          if (data2D.length > 0) {
+            // Insert starting at currently selected cell, or A1
+            const selected = hotInstance.getSelected();
+            let startRow = 0;
+            let startCol = 0;
+            if (selected && selected.length > 0) {
+               startRow = selected[0][0];
+               startCol = selected[0][1];
+            }
+            hotInstance.populateFromArray(startRow, startCol, data2D);
+            return;
+          }
+        }
+
+        // 2. Fallback to single cell update via JSON
         const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/{[\s\S]*?}/);
         if (jsonMatch) {
           const payload = JSON.parse(jsonMatch[1] || jsonMatch[0]);

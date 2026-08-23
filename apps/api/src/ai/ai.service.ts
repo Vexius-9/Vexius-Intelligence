@@ -79,6 +79,10 @@ export class AiService {
     prompt += `3. DO NOT wrap your response in markdown code blocks or blockquotes unless specifically asked to write code.\n`;
     prompt += `4. DO NOT use horizontal rules ('---') to separate your response from filler, just don't write filler.\n`;
 
+    if (context?.documentType === 'spreadsheet') {
+      prompt += `5. SPREADSHEET MODE: When asked to generate templates (like financial plans, schedules, tables, etc.), you MUST format your response as a standard Markdown table (e.g., | Col1 | Col2 |\\n|---|---|\\n| Val1 | Val2 |). Do not use JSON or other formats for templates.\n`;
+    }
+
     return prompt;
   }
 

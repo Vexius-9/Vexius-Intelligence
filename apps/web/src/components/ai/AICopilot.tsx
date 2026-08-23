@@ -332,7 +332,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                       }
                     }} 
                     style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}>
-                    <CheckCircle size={14} /> Apply to Document
+                    <CheckCircle size={14} /> Apply to {documentContext?.documentType === 'spreadsheet' ? 'Sheet' : documentContext?.documentType === 'presentation' ? 'Slide' : 'Document'}
                   </button>
                 </div>
               )}
