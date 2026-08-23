@@ -24,8 +24,9 @@ import { CustomBulletList } from './extensions/CustomBulletList';
 import { CustomOrderedList } from './extensions/CustomOrderedList';
 import Youtube from '@tiptap/extension-youtube';
 import CharacterCount from '@tiptap/extension-character-count';
+import { PaginationPlus } from 'tiptap-pagination-plus';
 import { VexiusRibbon } from './VexiusRibbon';
-import { Maximize, Minimize, Sparkles, Wand2, Type, AlignLeft, CheckCircle2, Check, X, CopyPlus } from 'lucide-react';
+import { Maximize, Minimize, Sparkles, Wand2, Type, AlignLeft, CheckCircle2, Check, X, CopyPlus, Send } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export interface VexiusTiptapEditorProps {
@@ -73,7 +74,8 @@ function sanitizeContent(node: any): any {
 export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptapEditorProps>(({ documentId, initialContent, onUpdate, sidebar, navbarElement, documentName }, ref) => {
   const [isMounted, setIsMounted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isCopilotVisible, setIsCopilotVisible] = useState(true);
+  const [isCopilotVisible, setIsCopilotVisible] = useState(false);
+  const [pageCount, setPageCount] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
 
   // Stable ref for onUpdate to avoid recreating the editor on prop change
@@ -81,8 +83,8 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
   React.useLayoutEffect(() => { onUpdateRef.current = onUpdate; });
 
   // AI Inline State
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiDraft, setAiDraft] = useState<string | null>(null);
+  const [showRewriteInput, setShowRewriteInput] = useState(false);
+  const [rewriteContext, setRewriteContext] = useState('');
 
   useEffect(() => {
     const handleToggleAI = () => setIsCopilotVisible(prev => !prev);
@@ -95,8 +97,14 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
     };
   }, []);
 
-  const handleInlineAIAction = async (action: 'rewrite' | 'grammar' | 'summarize') => {
+  const handleInlineAIAction = (action: 'rewrite' | 'grammar' | 'summarize') => {
     if (!editor) return;
+    
+    if (action === 'rewrite' && !showRewriteInput) {
+      setShowRewriteInput(true);
+      return;
+    }
+
     const { from, to } = editor.state.selection;
     const text = editor.state.doc.textBetween(from, to, ' ');
     if (!text || text.trim() === '') {
@@ -104,47 +112,20 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
       return;
     }
 
-    setIsAiLoading(true);
-    setAiDraft(null);
+    // Dispatch event to AICopilot
+    window.dispatchEvent(new CustomEvent('vexius:inline-ai-action', {
+      detail: { action, text, context: rewriteContext }
+    }));
 
-    try {
-      const token = localStorage.getItem("vexius_token");
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/ai/inline-action`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          action,
-          text,
-          documentId
-        })
-      });
-
-      if (!res.ok) throw new Error("Action failed");
-      const data = await res.json();
-      setAiDraft(data.result);
-    } catch (err) {
-      console.error(err);
-      toast.error("AI action failed.");
-      setAiDraft(null);
-    } finally {
-      setIsAiLoading(false);
+    // Reset floating menu state
+    setShowRewriteInput(false);
+    setRewriteContext('');
+    
+    // Automatically open AI sidebar if it's not open
+    if (!isCopilotVisible) {
+      setIsCopilotVisible(true);
     }
   };
-
-  const applyAiDraft = (mode: 'replace' | 'insert_below') => {
-    if (!editor || !aiDraft) return;
-    if (mode === 'replace') {
-      editor.chain().focus().insertContent(aiDraft).run();
-    } else {
-      editor.chain().focus().insertContent(`\n\n${aiDraft}\n`).run();
-    }
-    setAiDraft(null);
-  };
-
   // ─── Direct Editor Instantiation ────────────────────────────────────────────
   // We bypass useEditor entirely because Tiptap v3's useEditor hook internally
   // calls refreshEditorInstance when any option changes, causing the
@@ -184,13 +165,35 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
           Indent,
           Youtube.configure({ controls: false }),
           CharacterCount,
+          PaginationPlus.configure({
+            pageHeight: 1123, // A4 height at 96 DPI
+            pageWidth: 794,   // A4 width at 96 DPI
+            pageGap: 40,
+            marginTop: 96,
+            marginBottom: 96,
+            marginLeft: 96,
+            marginRight: 96,
+            footerRight: '',
+            footerLeft: '',
+            headerRight: '',
+            headerLeft: '',
+          }),
         ],
         content: sanitizeContent(initialContent) || '',
         onUpdate: ({ editor: e }) => {
           if (onUpdateRef.current) onUpdateRef.current(e.getHTML());
         },
+        onTransaction: ({ editor: e }) => {
+          const pages = e.view.dom.querySelectorAll('.rm-page-break');
+          if (pages.length > 0) {
+            setPageCount(prev => prev !== pages.length ? pages.length : prev);
+          }
+        },
         editorProps: {
-          attributes: { class: 'vexius-tiptap-paper' },
+          attributes: {
+            class: 'vexius-tiptap-paper prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none max-w-none',
+            style: 'background: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); min-height: 1123px; margin: 0 auto; border: none;'
+          },
         },
       });
 
@@ -239,8 +242,8 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
         height: '100%', 
         background: '#e5e7eb'
       }}>
-      <div style={{ zIndex: 10, position: 'relative' }}>
-        <VexiusRibbon editor={editor} navbarElement={navbarElement} />
+      <div style={{ zIndex: 9999, position: 'relative' }}>
+        <VexiusRibbon editor={editor} navbarElement={navbarElement} isCopilotVisible={isCopilotVisible} />
       </div>
       
       {/* Editor Content Area */}
@@ -298,12 +301,23 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
           {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
         </button>
 
+        <style>{`
+          .ProseMirror.rm-with-pagination {
+            border: none !important;
+          }
+          .rm-pagination-gap {
+            background: #e5e7eb !important;
+            border: none !important;
+            z-index: 10 !important;
+            position: relative;
+          }
+        `}</style>
+
         <div style={{
-          background: '#ffffff',
-          width: '816px', // A4 width at 96 DPI
-          minHeight: '1056px', // A4 height at 96 DPI
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-          padding: '96px', // Standard 1-inch margins
+          background: 'transparent',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
           outline: 'none',
           marginBottom: '40px',
           transform: `scale(${zoomLevel / 100})`,
@@ -325,37 +339,74 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
                 minWidth: '240px'
               }}
             >
-              {isAiLoading ? (
-                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
-                  <Sparkles size={16} color="#a855f7" style={{ animation: 'spin 2s linear infinite' }} />
-                  <span>Vexius AI is thinking...</span>
-                </div>
-              ) : aiDraft ? (
-                <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '13px', color: '#374151', padding: '8px', background: '#f3f4f6', borderRadius: '4px', maxHeight: '150px', overflowY: 'auto' }}>
-                    {aiDraft}
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button onClick={() => applyAiDraft('replace')} style={{ flex: 1, padding: '6px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px' }}>
-                      <Check size={14} /> Replace
-                    </button>
-                    <button onClick={() => applyAiDraft('insert_below')} style={{ flex: 1, padding: '6px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px' }}>
-                      <CopyPlus size={14} /> Insert Below
-                    </button>
-                    <button onClick={() => setAiDraft(null)} style={{ padding: '6px', background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
-                      <X size={14} />
-                    </button>
-                  </div>
+              <style>{`
+                .ai-bubble-btn {
+                  padding: 6px 8px;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 4px;
+                  font-size: 13px;
+                  transition: all 0.15s ease;
+                }
+                .ai-bubble-btn.rewrite {
+                  background: rgba(168, 85, 247, 0.1);
+                  color: #a855f7;
+                  font-weight: 500;
+                }
+                .ai-bubble-btn.rewrite:hover {
+                  background: rgba(168, 85, 247, 0.2);
+                }
+                .ai-bubble-btn.rewrite:active {
+                  background: rgba(168, 85, 247, 0.3);
+                  transform: scale(0.96);
+                }
+                
+                .ai-bubble-btn.standard {
+                  background: transparent;
+                  color: #4b5563;
+                }
+                .ai-bubble-btn.standard:hover {
+                  background: #f3f4f6;
+                  color: #111827;
+                }
+                .ai-bubble-btn.standard:active {
+                  background: #e5e7eb;
+                  transform: scale(0.96);
+                }
+              `}</style>
+              {showRewriteInput ? (
+                <div style={{ display: 'flex', gap: '4px', padding: '4px' }}>
+                  <input 
+                    type="text" 
+                    value={rewriteContext}
+                    onChange={(e) => setRewriteContext(e.target.value)}
+                    placeholder="E.g. Make it more formal..."
+                    style={{ flex: 1, padding: '4px 8px', fontSize: '13px', border: '1px solid #d1d5db', borderRadius: '4px', outline: 'none' }}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleInlineAIAction('rewrite');
+                      if (e.key === 'Escape') setShowRewriteInput(false);
+                    }}
+                  />
+                  <button onClick={() => handleInlineAIAction('rewrite')} style={{ padding: '4px 8px', background: '#a855f7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>
+                    <Send size={14} />
+                  </button>
+                  <button onClick={() => setShowRewriteInput(false)} style={{ padding: '4px 8px', background: '#f3f4f6', color: '#4b5563', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>
+                    <X size={14} />
+                  </button>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: '4px' }}>
-                  <button onClick={() => handleInlineAIAction('rewrite')} style={{ padding: '6px 8px', border: 'none', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 500 }}>
+                  <button className="ai-bubble-btn standard" onClick={() => handleInlineAIAction('rewrite')}>
                     <Wand2 size={14} /> Rewrite
                   </button>
-                  <button onClick={() => handleInlineAIAction('grammar')} style={{ padding: '6px 8px', border: 'none', background: 'transparent', color: '#4b5563', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                  <button className="ai-bubble-btn standard" onClick={() => handleInlineAIAction('grammar')}>
                     <CheckCircle2 size={14} /> Grammar
                   </button>
-                  <button onClick={() => handleInlineAIAction('summarize')} style={{ padding: '6px 8px', border: 'none', background: 'transparent', color: '#4b5563', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                  <button className="ai-bubble-btn standard" onClick={() => handleInlineAIAction('summarize')}>
                     <AlignLeft size={14} /> Summarize
                   </button>
                 </div>
@@ -382,7 +433,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
       }}>
         {/* Left Side */}
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <span>Page 1 of 1</span>
+          <span>Page 1 of {pageCount}</span>
           <span>{editor?.storage?.characterCount?.words() ?? 0} words</span>
           <span>— Opened {documentName ? documentName + '.docx' : 'document.docx'}</span>
         </div>

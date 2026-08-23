@@ -24,7 +24,7 @@ interface AICopilotProps {
 }
 
 export function AICopilot({ documentContext, getCurrentSelection, getFullText, onApplyAction, onAiStart, onAiEnd }: AICopilotProps) {
-  const [selectedModel, setSelectedModel] = useState<string>("openai:gpt-4o");
+  const [selectedModel, setSelectedModel] = useState<string>("deepseek:deepseek-chat");
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [cachedSelection, setCachedSelection] = useState<string>("");
@@ -117,8 +117,6 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       if (!res.ok) throw new Error("Action failed");
       const data = await res.json();
       
-      // For explain or PDF actions, we don't want to replace text in document
-      // We want to just output it in the chat.
       if (action === 'explain_formula' || action === 'summarize_pdf') {
         setMessages([...messages, { 
           id: Date.now().toString(), 
@@ -126,7 +124,17 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
           content: `**${action === 'explain_formula' ? 'Formula Explanation' : 'PDF Summary'}**\n\n${data.result}` 
         }]);
       } else {
-        onApplyAction(data.result);
+        const actionNames = {
+          rewrite: 'Rewrite Result',
+          grammar: 'Grammar Correction',
+          summarize: 'Summary'
+        };
+        const title = actionNames[action as keyof typeof actionNames] || 'AI Result';
+        setMessages([...messages, { 
+          id: Date.now().toString(), 
+          role: 'assistant', 
+          content: `**${title}**\n\n${data.result}` 
+        }]);
       }
     } catch (err) {
       console.error(err);
@@ -192,6 +200,31 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
     }
     handleSubmit(e);
   };
+
+  useEffect(() => {
+    const handleInlineEvent = async (e: any) => {
+      const { action, text, context } = e.detail;
+      
+      if (action === 'rewrite' && context) {
+        if (onAiStart) onAiStart();
+        setIsProcessingAction(true);
+        try {
+          const prompt = `Rewrite the following text with this instruction: "${context}".\n\nText:\n${text}`;
+          await append({ id: Date.now().toString(), role: 'user', content: prompt });
+        } catch (err) {
+          toast.error("Failed to execute rewrite action.");
+        } finally {
+          setIsProcessingAction(false);
+          if (onAiEnd) onAiEnd();
+        }
+      } else {
+        handleInlineAction(action);
+      }
+    };
+    
+    window.addEventListener('vexius:inline-ai-action', handleInlineEvent);
+    return () => window.removeEventListener('vexius:inline-ai-action', handleInlineEvent);
+  }, [append, messages]);
 
   return (
     <div 
@@ -281,10 +314,19 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                   {msg.content}
                 </ReactMarkdown>
               )}
+              {msg.role === "assistant" && msg.id !== "1" && (
+                <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={() => onApplyAction && onApplyAction(msg.content.replace(/^\*\*.*?\*\*\n\n/, ''))} 
+                    style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}>
+                    <CheckCircle size={14} /> Apply to Document
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
-        {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+        {(isLoading || isProcessingAction) && (
           <div style={{ display: "flex", gap: "12px" }}>
             <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                <Sparkles size={12} color="#000" />

@@ -5,17 +5,21 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Indent, Outdent,
   List, ListOrdered, CheckSquare, Palette, Highlighter, RemoveFormatting,
   Table as TableIcon, Image as ImageIcon, Link as LinkIcon, Quote, Minus, Code, SquareCode,
-  Video, CornerDownLeft, Grid, Trash2, Bot, Save, Wand2
+  Video, CornerDownLeft, Grid, Trash2, Bot, Save, Wand2,
+  ShieldCheck, Clock, Share2, FolderOpen, Info
 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 
 export interface VexiusRibbonProps {
   editor: Editor | null;
   navbarElement?: React.ReactNode;
+  isCopilotVisible?: boolean;
 }
 
-export function VexiusRibbon({ editor, navbarElement }: VexiusRibbonProps) {
+export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }: VexiusRibbonProps) {
   const [activeTab, setActiveTab] = React.useState('Home');
+  const [isFileMenuOpen, setIsFileMenuOpen] = React.useState(false);
+  const [activeFileMenuTab, setActiveFileMenuTab] = React.useState('Info');
 
   if (!editor) {
     return <div style={{ height: '120px', borderBottom: '1px solid var(--border-color)' }}></div>;
@@ -48,7 +52,8 @@ export function VexiusRibbon({ editor, navbarElement }: VexiusRibbonProps) {
       background: '#f9fafb',
       fontFamily: 'var(--font-geist-sans)',
       width: '100%',
-      overflowX: 'hidden'
+      position: 'relative',
+      zIndex: 50
     }}>
       {/* Top Tabs */}
       <div style={{ display: 'flex', gap: '16px', padding: '4px 8px', alignItems: 'center' }}>
@@ -57,7 +62,95 @@ export function VexiusRibbon({ editor, navbarElement }: VexiusRibbonProps) {
 
         {/* File & Quick Actions Group */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button style={{ padding: '6px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer' }}>File</button>
+          <div style={{ position: 'relative', zIndex: 1000 }}>
+            <button 
+              onClick={() => setIsFileMenuOpen(!isFileMenuOpen)}
+              style={{ padding: '6px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer' }}
+            >
+              File
+            </button>
+            {isFileMenuOpen && (
+              <>
+                <div 
+                  onClick={() => setIsFileMenuOpen(false)} 
+                  style={{ position: 'fixed', inset: 0, zIndex: 998 }} 
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  marginTop: '4px',
+                  background: '#fff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+                  zIndex: 999,
+                  minWidth: '220px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '4px'
+                }}>
+                  {[
+                    { icon: <FileText size={16} />, label: 'New', action: () => alert('New Document') },
+                    { icon: <FolderOpen size={16} />, label: 'Open', action: () => alert('Open Document') }
+                  ].map((item, idx) => (
+                    <button key={idx} onClick={() => { item.action(); setIsFileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+                  
+                  <div style={{ borderTop: '1px solid #e2e8f0', margin: '4px 0' }}></div>
+                  
+                  {[
+                    { icon: <Save size={16} />, label: 'Save', action: () => alert('Document saved successfully!') },
+                    { icon: <Save size={16} />, label: 'Save As...', action: () => alert('Save As Dialog') }
+                  ].map((item, idx) => (
+                    <button key={idx} onClick={() => { item.action(); setIsFileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+
+                  <div style={{ borderTop: '1px solid #e2e8f0', margin: '4px 0' }}></div>
+
+                  {[
+                    { icon: <Printer size={16} />, label: 'Print', action: () => window.print() },
+                    { icon: <Share2 size={16} />, label: 'Share', action: () => alert('Share Dialog') }
+                  ].map((item, idx) => (
+                    <button key={idx} onClick={() => { item.action(); setIsFileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+
+                  <div style={{ borderTop: '1px solid #e2e8f0', margin: '4px 0' }}></div>
+
+                  {[
+                    { icon: <Code size={16} />, label: 'Export as HTML', action: () => {
+                        const blob = new Blob([editor.getHTML()], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'document.html';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }},
+                    { icon: <FileText size={16} />, label: 'Export as TXT', action: () => {
+                        const blob = new Blob([editor.getText()], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'document.txt';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                  ].map((item, idx) => (
+                    <button key={idx} onClick={() => { item.action(); setIsFileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Save">
@@ -118,13 +211,15 @@ export function VexiusRibbon({ editor, navbarElement }: VexiusRibbonProps) {
           <div style={{ display: 'flex', gap: '12px', height: '100%', alignItems: 'center' }}>
             
             <button onClick={() => window.dispatchEvent(new CustomEvent('vexius:toggle-ai'))} style={{ 
-              border: 'none', background: '#e5e7eb', borderRadius: '6px', padding: '8px', 
+              border: isCopilotVisible ? '1px solid #a855f7' : '1px solid transparent',
+              background: isCopilotVisible ? '#f3e8ff' : 'transparent', 
+              borderRadius: '6px', padding: '7px', 
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' 
             }}>
               <div style={{ padding: '4px', display: 'flex' }}>
                 <img src="/logo.png" alt="Vexius AI" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
               </div>
-              <span style={{ fontSize: '0.75rem', color: '#111827', fontWeight: 500 }}>Vexius AI</span>
+              <span style={{ fontSize: '0.75rem', color: isCopilotVisible ? '#9333ea' : '#111827', fontWeight: 500 }}>Vexius AI</span>
             </button>
             
             <button onClick={() => {
@@ -518,6 +613,7 @@ export function VexiusRibbon({ editor, navbarElement }: VexiusRibbonProps) {
         )}
 
       </div>
+
     </div>
   );
 }
