@@ -496,3 +496,27 @@ a {
     overflow: visible !important;
   }
 }
+
+.ht-header-bold {
+  font-weight: bold !important;
+  background-color: #f3f4f6 !important;
+}
+.ht-bold { font-weight: bold !important; }
+.ht-italic { font-style: italic !important; }
+.ht-underline { text-decoration: underline !important; }
+.ht-strike { text-decoration: line-through !important; }
+
+/* Sheet Grid Borders */
+.ht-border-all { 
+  border-right: 1px solid #000 !important; 
+  border-bottom: 1px solid #000 !important; 
+}
+.ht-border-top { border-top: 1px solid #000 !important; }
+.ht-border-left { border-left: 1px solid #000 !important; }
+
+.ht-border-template { 
+  border-right: 1px solid #000 !important; 
+  border-bottom: 1px solid #000 !important; 
+}
+.ht-border-template-top { border-top: 1px solid #000 !important; }
+.ht-border-template-left { border-left: 1px solid #000 !important; }
