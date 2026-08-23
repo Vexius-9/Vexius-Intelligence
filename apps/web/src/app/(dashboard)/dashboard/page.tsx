@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles, ChevronDown, Upload } from "lucide-react";
+import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles, ChevronDown, Upload, Table, Presentation, File } from "lucide-react";
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<any[]>([]);
@@ -465,8 +465,8 @@ export default function DashboardPage() {
                       }}>
                       <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); createNewDocument('folder'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><Folder size={16} color="#eab308" /> New Folder</button>
                       <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); createNewDocument('document'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><FileText size={16} color="#3b82f6" /> New Word</button>
-                      <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); createNewDocument('spreadsheet'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><FileText size={16} color="#10b981" /> New Excel</button>
-                      <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); createNewDocument('presentation'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><FileText size={16} color="#f97316" /> New PowerPoint</button>
+                      <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); createNewDocument('spreadsheet'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><Table size={16} color="#10b981" /> New Excel</button>
+                      <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); createNewDocument('presentation'); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><Presentation size={16} color="#f97316" /> New PowerPoint</button>
                       <div style={{ height: "1px", background: "var(--border-color)", margin: "4px 0" }} />
                       <button onClick={(e) => { e.stopPropagation(); setShowCreateMenu(false); handleUploadClick(); }} style={{ textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"} onMouseOut={(e) => e.currentTarget.style.background = "none"}><Upload size={16} /> Upload Document</button>
                     </div>
@@ -500,7 +500,7 @@ export default function DashboardPage() {
                   <>
                     <div style={{ 
                       flex: 1, 
-                      background: isFolder ? "transparent" : "#fff",
+                      background: isFolder ? "transparent" : "var(--bg-primary)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -508,26 +508,14 @@ export default function DashboardPage() {
                       position: "relative",
                       overflow: "hidden"
                     }}>
-                      {/* Fake lines for document preview */}
-                      {!isFolder && (
-                        <div style={{ position: "absolute", top: "15%", left: "15%", right: "15%", display: "flex", flexDirection: "column", gap: "8px" }}>
-                          <div style={{ height: "6px", background: "#f1f5f9", borderRadius: "3px", width: "50%", marginBottom: "4px" }} />
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "100%" }} />
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "90%" }} />
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "95%" }} />
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "80%", marginBottom: "8px" }} />
-                          
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "100%" }} />
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "85%" }} />
-                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "95%" }} />
-                        </div>
-                      )}
+
                       
-                      <div style={{ color: isFolder ? "#eab308" : "var(--text-secondary)", zIndex: 1, opacity: isFolder ? 1 : 0.1 }}>
-                        {isFolder ? <Folder size={64} fill="currentColor" fillOpacity={0.2} /> : (
-                          doc.type === 'spreadsheet' ? <FileText size={64} color="#10b981" /> :
-                          doc.type === 'presentation' ? <FileText size={64} color="#f97316" /> :
-                          <FileText size={64} color="#3b82f6" />
+                      <div style={{ zIndex: 1, opacity: isFolder ? 1 : 0.8, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        {isFolder ? <Folder size={64} fill="#eab308" color="#eab308" fillOpacity={0.2} /> : (
+                          doc.type === 'spreadsheet' ? <img src="/sheet.png" alt="Sheet" style={{ width: 64, height: 64, objectFit: 'contain' }} /> :
+                          doc.type === 'presentation' ? <img src="/slides.png" alt="Presentation" style={{ width: 64, height: 64, objectFit: 'contain' }} /> :
+                          doc.type === 'pdf' ? <img src="/pdf.png" alt="PDF" style={{ width: 64, height: 64, objectFit: 'contain' }} /> :
+                          <img src="/docs.png" alt="Document" style={{ width: 64, height: 64, objectFit: 'contain' }} />
                         )}
                       </div>
 
@@ -574,8 +562,13 @@ export default function DashboardPage() {
 
                     <div style={{ padding: "12px 16px", background: "var(--bg-secondary)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                        <div style={{ color: isFolder ? "#eab308" : (doc.type === 'spreadsheet' ? "#10b981" : doc.type === 'presentation' ? "#f97316" : "#3b82f6") }}>
-                          {isFolder ? <Folder size={16} fill="currentColor" /> : <FileText size={16} />}
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                          {isFolder ? <Folder size={16} fill="#eab308" color="#eab308" /> : (
+                            doc.type === 'spreadsheet' ? <img src="/sheet.png" alt="Sheet" style={{ width: 16, height: 16, objectFit: 'contain' }} /> :
+                            doc.type === 'presentation' ? <img src="/slides.png" alt="Presentation" style={{ width: 16, height: 16, objectFit: 'contain' }} /> :
+                            doc.type === 'pdf' ? <img src="/pdf.png" alt="PDF" style={{ width: 16, height: 16, objectFit: 'contain' }} /> :
+                            <img src="/docs.png" alt="Document" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                          )}
                         </div>
                         <h3 style={{ fontSize: "0.95rem", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{doc.name}</h3>
                       </div>

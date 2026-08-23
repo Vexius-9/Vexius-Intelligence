@@ -18,7 +18,7 @@ import 'handsontable/styles/ht-theme-main.min.css';
 import Handsontable from 'handsontable';
 
 import { VexiusSheetRibbon } from './VexiusSheetRibbon';
-import { FunctionSquare, Grid, PaintBucket, Sparkles } from 'lucide-react';
+import { FunctionSquare, Grid, PaintBucket, Sparkles, Trash2 } from 'lucide-react';
 
 export interface VexiusSheetEditorProps {
   documentId: string;
@@ -52,14 +52,20 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     return () => window.removeEventListener('vexius:toggle-ai', handleToggleAI as EventListener);
   }, []);
 
+  const [customBordersData, setCustomBordersData] = useState<any>(true);
+
   const [sheetData, setSheetData] = useState(() => {
     let data = Array(50).fill(0).map(() => Array(26).fill(''));
     if (initialContent) {
       try {
-        if (typeof initialContent === 'string') {
-          data = JSON.parse(initialContent);
-        } else {
-          data = initialContent;
+        let parsed = typeof initialContent === 'string' ? JSON.parse(initialContent) : initialContent;
+        if (parsed && typeof parsed === 'object' && parsed.data && Array.isArray(parsed.data)) {
+          data = parsed.data;
+          if (parsed.borders && Array.isArray(parsed.borders)) {
+            // we must set this in useEffect since we can't call setState inside useState initialization safely without warning
+          }
+        } else if (Array.isArray(parsed)) {
+          data = parsed;
         }
       } catch (e) {
         console.error("Failed to parse initial sheet content", e);
@@ -67,6 +73,25 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     }
     return data;
   });
+
+  useEffect(() => {
+    if (initialContent) {
+      try {
+        let parsed = typeof initialContent === 'string' ? JSON.parse(initialContent) : initialContent;
+        if (parsed && typeof parsed === 'object' && parsed.borders && Array.isArray(parsed.borders)) {
+          const sanitizedBorders = parsed.borders.map((b: any) => {
+            const newB = { ...b };
+            if (newB.left) { newB.start = newB.left; delete newB.left; }
+            if (newB.right) { newB.end = newB.right; delete newB.right; }
+            return newB;
+          });
+          setCustomBordersData(sanitizedBorders);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [initialContent]);
 
   useImperativeHandle(ref, () => ({
     getFullText: () => {
@@ -155,8 +180,22 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     }
   }));
 
-  const saveContent = async (data: any[]) => {
+  const saveContent = async (hotInstance: any) => {
     try {
+      const data = hotInstance.getSourceData();
+      
+      let borders = [];
+      const customBordersPlugin = hotInstance.getPlugin('customBorders');
+      if (customBordersPlugin) {
+        // getBorders returns the array of border definitions Handsontable uses
+        borders = customBordersPlugin.getBorders() || [];
+      }
+      
+      const payload = {
+        data,
+        borders
+      };
+
       const token = localStorage.getItem("vexius_token");
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       await fetch(`${apiUrl}/documents/${documentId}/content`, {
@@ -165,10 +204,10 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        // We stringify the JSON array for storage
-        body: JSON.stringify({ content: JSON.stringify(data) })
+        // We stringify the payload object containing data and borders
+        body: JSON.stringify({ content: JSON.stringify(payload) })
       });
-      console.log("Sheet autosaved successfully");
+      console.log("Sheet autosaved successfully with borders");
     } catch (e) {
       console.error("Autosave failed", e);
     }
@@ -197,7 +236,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     autosaveTimerRef.current = setTimeout(() => {
       const hotInstance = hotRef.current?.hotInstance;
       if (hotInstance) {
-        saveContent(hotInstance.getSourceData());
+        saveContent(hotInstance);
       }
     }, 2000);
   };
@@ -206,7 +245,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     const handleForceSave = () => {
       const hotInstance = hotRef.current?.hotInstance;
       if (hotInstance) {
-        saveContent(hotInstance.getSourceData());
+        saveContent(hotInstance);
       }
     };
     
@@ -377,7 +416,6 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             {sidebar}
           </div>
         )}
-
         {/* Sheet Grid Container */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#fff' }} ref={wrapperRef}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
@@ -392,7 +430,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                 licenseKey="non-commercial-and-evaluation"
                 contextMenu={true}
                 mergeCells={true}
-                customBorders={true}
+                customBorders={customBordersData}
                 multiColumnSorting={true}
                 manualRowResize={true}
                 manualColumnResize={true}
@@ -470,6 +508,30 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                 const r = Math.min(startRow, range[2] ?? startRow);
                                 const c = Math.min(startCol, range[3] ?? startCol);
                                 
+                                const shiftFormula = (formula: string, rowOffset: number, colOffset: number) => {
+                                  if (typeof formula !== 'string' || !formula.startsWith('=')) return formula;
+                                  return formula.replace(/(\$?[A-Z]+)(\$?[1-9][0-9]*)/g, (match, colStrRaw, rowStrRaw, offset, fullStr) => {
+                                    if (fullStr[offset + match.length] === '(') return match;
+                                    const colStr = colStrRaw.replace('$', '');
+                                    const rowStr = rowStrRaw.replace('$', '');
+                                    const isColAbs = colStrRaw.startsWith('$');
+                                    const isRowAbs = rowStrRaw.startsWith('$');
+                                    let colNum = 0;
+                                    for (let i = 0; i < colStr.length; i++) { colNum = colNum * 26 + (colStr.charCodeAt(i) - 64); }
+                                    colNum -= 1;
+                                    const rowNum = parseInt(rowStr, 10) - 1;
+                                    const newColNum = colNum + colOffset;
+                                    const newRowNum = rowNum + rowOffset;
+                                    let newColStr = '';
+                                    let tempCol = newColNum;
+                                    while (tempCol >= 0) {
+                                      newColStr = String.fromCharCode(65 + (tempCol % 26)) + newColStr;
+                                      tempCol = Math.floor(tempCol / 26) - 1;
+                                    }
+                                    return `${isColAbs ? '$' : ''}${newColStr}${isRowAbs ? '$' : ''}${newRowNum + 1}`;
+                                  });
+                                };
+
                                 if (isTableRequest) {
                                   try {
                                     // The response should be a raw JSON string like '[["A", "B"], [1, 2]]'
@@ -480,20 +542,25 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                     
                                     const tableData = JSON.parse(jsonStr);
                                     if (Array.isArray(tableData) && Array.isArray(tableData[0])) {
-                                      hotInst.populateFromArray(r, c, tableData);
+                                      // Shift all formulas in the generated table
+                                      const shiftedTableData = tableData.map(row => 
+                                        row.map((cell: any) => shiftFormula(cell, r, c))
+                                      );
+                                      
+                                      hotInst.populateFromArray(r, c, shiftedTableData);
                                       
                                       // Apply beautiful borders to the generated table
                                       const customBordersPlugin = hotInst.getPlugin('customBorders');
                                       if (customBordersPlugin) {
-                                        const endRow = r + tableData.length - 1;
-                                        const endCol = c + tableData[0].length - 1;
+                                        const endRow = r + shiftedTableData.length - 1;
+                                        const endCol = c + shiftedTableData[0].length - 1;
                                         for (let currR = r; currR <= endRow; currR++) {
                                           for (let currC = c; currC <= endCol; currC++) {
                                             customBordersPlugin.setBorders([[currR, currC, currR, currC]], {
                                               top: { width: 1, color: '#000' },
-                                              left: { width: 1, color: '#000' },
+                                              start: { width: 1, color: '#000' },
                                               bottom: { width: 1, color: '#000' },
-                                              right: { width: 1, color: '#000' }
+                                              end: { width: 1, color: '#000' }
                                             });
                                           }
                                         }
@@ -556,25 +623,57 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                       const range = floatingMenu.range;
                       if (range) {
                         const [startRow, startCol, endRow, endCol] = range;
-                        const minRow = Math.min(startRow, endRow);
-                        const maxRow = Math.max(startRow, endRow);
-                        const minCol = Math.min(startCol, endCol);
-                        const maxCol = Math.max(startCol, endCol);
+                        const selMinRow = Math.min(startRow, endRow);
+                        const selMaxRow = Math.max(startRow, endRow);
+                        const selMinCol = Math.min(startCol, endCol);
+                        const selMaxCol = Math.max(startCol, endCol);
+                        
+                        let minRow = selMaxRow;
+                        let maxRow = selMinRow;
+                        let minCol = selMaxCol;
+                        let maxCol = selMinCol;
+                        let hasData = false;
+
+                        for (let r = selMinRow; r <= selMaxRow; r++) {
+                          for (let c = selMinCol; c <= selMaxCol; c++) {
+                            const val = hotInstance.getDataAtCell(r, c);
+                            if (val !== null && val !== undefined && val !== '') {
+                              hasData = true;
+                              if (r < minRow) minRow = r;
+                              if (r > maxRow) maxRow = r;
+                              if (c < minCol) minCol = c;
+                              if (c > maxCol) maxCol = c;
+                            }
+                          }
+                        }
+
+                        // If no data was found in the selection, fallback to bordering the entire selection
+                        if (!hasData) {
+                          minRow = selMinRow;
+                          maxRow = selMaxRow;
+                          minCol = selMinCol;
+                          maxCol = selMaxCol;
+                        }
                         
                         const customBordersPlugin = hotInstance.getPlugin('customBorders');
                         if (customBordersPlugin) {
+                          // First clear the whole selection to remove extraneous borders outside the bounding box
+                          customBordersPlugin.clearBorders([[selMinRow, selMinCol, selMaxRow, selMaxCol]]);
+                          
                           for (let r = minRow; r <= maxRow; r++) {
                             for (let c = minCol; c <= maxCol; c++) {
                               customBordersPlugin.setBorders([[r, c, r, c]], {
                                 top: { width: 1, color: '#000' },
-                                left: { width: 1, color: '#000' },
+                                start: { width: 1, color: '#000' },
                                 bottom: { width: 1, color: '#000' },
-                                right: { width: 1, color: '#000' }
+                                end: { width: 1, color: '#000' }
                               });
                             }
                           }
-                          for (let r = minRow; r <= maxRow; r++) {
-                            for (let c = minCol; c <= maxCol; c++) {
+                          
+                          // Clear custom css classes for the full selection to clean up artifacts
+                          for (let r = selMinRow; r <= selMaxRow; r++) {
+                            for (let c = selMinCol; c <= selMaxCol; c++) {
                               let currentClass = hotInstance.getCellMeta(r, c).className || '';
                               if (currentClass.includes('ht-border-')) {
                                 currentClass = currentClass.replace(/ht-border-[^\s]+/g, '').trim();
@@ -619,6 +718,66 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                       color: '#4f46e5'
                     }} title="AI Formula Generator">
                       <Sparkles size={14} />
+                    </button>
+                    
+                    <button onMouseDown={(e) => {
+                      e.preventDefault(); 
+                      e.stopPropagation();
+                      
+                      const hotInstance = hotRef.current?.hotInstance;
+                      if (!hotInstance) return;
+                      
+                      const range = floatingMenu.range;
+                      if (range) {
+                        const [startRow, startCol, endRow, endCol] = range;
+                        const minRow = Math.min(startRow, endRow);
+                        const maxRow = Math.max(startRow, endRow);
+                        const minCol = Math.min(startCol, endCol);
+                        const maxCol = Math.max(startCol, endCol);
+                        
+                        // Clear contents manually
+                        const emptyData = [];
+                        for (let r = minRow; r <= maxRow; r++) {
+                          const row = [];
+                          for (let c = minCol; c <= maxCol; c++) {
+                            row.push('');
+                          }
+                          emptyData.push(row);
+                        }
+                        hotInstance.populateFromArray(minRow, minCol, emptyData);
+                        
+                        // Clear borders
+                        const customBordersPlugin = hotInstance.getPlugin('customBorders');
+                        if (customBordersPlugin) {
+                          customBordersPlugin.clearBorders([[minRow, minCol, maxRow, maxCol]]);
+                          
+                          // Also clear custom classes (if set manually or from borders)
+                          for (let r = minRow; r <= maxRow; r++) {
+                            for (let c = minCol; c <= maxCol; c++) {
+                              let currentClass = hotInstance.getCellMeta(r, c).className || '';
+                              if (currentClass.includes('ht-border-')) {
+                                currentClass = currentClass.replace(/ht-border-[^\s]+/g, '').trim();
+                                hotInstance.setCellMeta(r, c, 'className', currentClass);
+                              }
+                            }
+                          }
+                        }
+                        hotInstance.render();
+                        setFloatingMenu({ ...floatingMenu, visible: false });
+                        window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+                      }
+                    }} style={{
+                      padding: '4px', 
+                      background: '#fef2f2', 
+                      border: '1px solid #fecaca', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      color: '#dc2626'
+                    }} title="Delete Table / Content">
+                      <Trash2 size={14} />
                     </button>
                   </>
                 )}
