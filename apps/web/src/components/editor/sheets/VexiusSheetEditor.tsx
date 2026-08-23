@@ -197,7 +197,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     autosaveTimerRef.current = setTimeout(() => {
       const hotInstance = hotRef.current?.hotInstance;
       if (hotInstance) {
-        saveContent(hotInstance.getData());
+        saveContent(hotInstance.getSourceData());
       }
     }, 2000);
   };
@@ -206,7 +206,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     const handleForceSave = () => {
       const hotInstance = hotRef.current?.hotInstance;
       if (hotInstance) {
-        saveContent(hotInstance.getData());
+        saveContent(hotInstance.getSourceData());
       }
     };
     
@@ -434,13 +434,13 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                     <input 
                       type="text" 
                       placeholder="What do you want to calculate?" 
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           e.stopPropagation();
-                          if (!aiPrompt.trim() || isGeneratingFormula) return;
+                          const inputTarget = e.currentTarget;
+                          const promptValue = inputTarget.value;
+                          if (!promptValue.trim() || isGeneratingFormula) return;
                           
                           setIsGeneratingFormula(true);
                           try {
@@ -448,7 +448,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
                             
                             // Detect if user wants a table or a formula
-                            const lowerPrompt = aiPrompt.toLowerCase();
+                            const lowerPrompt = promptValue.toLowerCase();
                             const isTableRequest = lowerPrompt.includes('create') || lowerPrompt.includes('table') || lowerPrompt.includes('tabel') || lowerPrompt.includes('buat');
                             const actionType = isTableRequest ? 'generate_table' : 'generate_formula';
 
@@ -458,7 +458,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                               },
-                              body: JSON.stringify({ action: actionType, text: aiPrompt })
+                              body: JSON.stringify({ action: actionType, text: promptValue })
                             });
                             
                             if (res.ok) {
@@ -511,7 +511,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                 }
                                 
                                 setFloatingMenu({ ...floatingMenu, visible: false, aiMode: false });
-                                setAiPrompt('');
+                                inputTarget.value = '';
                                 window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
                               }
                             }

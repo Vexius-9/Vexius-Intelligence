@@ -10,6 +10,9 @@ import {
   FileText, FolderOpen, Save, Download, ChevronRight, Printer, Share2, Undo2, Redo2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 export interface VexiusSheetRibbonProps {
   hotInstance?: any;
@@ -112,8 +115,9 @@ export function VexiusSheetRibbon({ hotInstance, navbarElement }: VexiusSheetRib
       background: '#f9fafb',
       fontFamily: 'var(--font-geist-sans)',
       width: '100%',
-      overflowX: 'hidden',
-      flexShrink: 0
+      flexShrink: 0,
+      position: 'relative',
+      zIndex: 99999
     }}>
       {/* Top Tabs */}
       <div style={{ display: 'flex', gap: '16px', padding: '4px 8px', alignItems: 'center' }}>
@@ -200,9 +204,109 @@ export function VexiusSheetRibbon({ hotInstance, navbarElement }: VexiusSheetRib
                         marginLeft: '4px'
                       }}>
                         {[
-                          { label: 'Microsoft Excel (.xlsx)', action: () => alert('Download XLSX') },
+                          { 
+                            label: 'Microsoft Excel (.xlsx)', 
+                            action: async () => {
+                              if (!hotInstance) return;
+                              const data = hotInstance.getData();
+                              const wb = new ExcelJS.Workbook();
+                              const ws = wb.addWorksheet("Sheet1");
+                              
+                              // Iterate through all cells to capture styles, borders & formulas
+                              const rows = hotInstance.countRows();
+                              const cols = hotInstance.countCols();
+                              
+                              const customBordersPlugin = hotInstance.getPlugin('customBorders');
+                              const bordersObj: Record<string, any> = {};
+                              
+                              if (customBordersPlugin) {
+                                const bordersArray = customBordersPlugin.getBorders();
+                                if (Array.isArray(bordersArray)) {
+                                  bordersArray.forEach((b: any) => {
+                                    if (b.row !== undefined && b.col !== undefined) {
+                                      const key = `${b.row}-${b.col}`;
+                                      bordersObj[key] = b;
+                                    }
+                                  });
+                                }
+                              }
+                              
+                              for (let r = 0; r < rows; r++) {
+                                for (let c = 0; c < cols; c++) {
+                                  const cell = ws.getCell(r + 1, c + 1);
+                                  
+                                  // Data & Formulas
+                                  const sourceVal = hotInstance.getSourceDataAtCell(r, c);
+                                  if (typeof sourceVal === 'string' && sourceVal.startsWith('=')) {
+                                    // Remove the leading '=' for exceljs formula
+                                    cell.value = { formula: sourceVal.substring(1) };
+                                  } else if (sourceVal !== null && sourceVal !== undefined && sourceVal !== '') {
+                                    // Convert string numbers to actual numbers for Excel
+                                    if (typeof sourceVal === 'string' && !isNaN(Number(sourceVal))) {
+                                      cell.value = Number(sourceVal);
+                                    } else {
+                                      cell.value = sourceVal;
+                                    }
+                                  }
+                                  
+                                  const meta = hotInstance.getCellMeta(r, c);
+                                  const className = meta.className || '';
+                                  
+                                  // Formatting
+                                  if (className.includes('ht-bold')) {
+                                    cell.font = cell.font || {};
+                                    cell.font.bold = true;
+                                  }
+                                  if (className.includes('ht-italic')) {
+                                    cell.font = cell.font || {};
+                                    cell.font.italic = true;
+                                  }
+                                  if (className.includes('ht-underline')) {
+                                    cell.font = cell.font || {};
+                                    cell.font.underline = true;
+                                  }
+                                  
+                                  // Borders from className (manual toggles)
+                                  if (className.includes('ht-border-all')) {
+                                    const bStyle = { style: 'thin' as const, color: { argb: 'FF000000' } };
+                                    cell.border = { top: bStyle, left: bStyle, bottom: bStyle, right: bStyle };
+                                  }
+                                  
+                                  // Borders from AI generation / customBorders plugin
+                                  const customBorder = bordersObj[`${r}-${c}`];
+                                  if (customBorder) {
+                                    const cBorder: any = { ...cell.border } || {};
+                                    if (customBorder.top) cBorder.top = { style: 'thin', color: { argb: 'FF000000' } };
+                                    if (customBorder.bottom) cBorder.bottom = { style: 'thin', color: { argb: 'FF000000' } };
+                                    if (customBorder.left) cBorder.left = { style: 'thin', color: { argb: 'FF000000' } };
+                                    if (customBorder.right) cBorder.right = { style: 'thin', color: { argb: 'FF000000' } };
+                                    cell.border = cBorder;
+                                  }
+                                }
+                              }
+                              
+                              const buffer = await wb.xlsx.writeBuffer();
+                              saveAs(new Blob([buffer]), "vexius_spreadsheet.xlsx");
+                            } 
+                          },
                           { label: 'Dokumen PDF (.pdf)', action: () => window.print() },
-                          { label: 'Comma Separated Values (.csv)', action: () => alert('Download CSV') }
+                          { 
+                            label: 'Comma Separated Values (.csv)', 
+                            action: () => {
+                              if (!hotInstance) return;
+                              const data = hotInstance.getData();
+                              const ws = XLSX.utils.aoa_to_sheet(data);
+                              const csv = XLSX.utils.sheet_to_csv(ws);
+                              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                              const link = document.createElement("a");
+                              const url = URL.createObjectURL(blob);
+                              link.setAttribute("href", url);
+                              link.setAttribute("download", "vexius_spreadsheet.csv");
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            } 
+                          }
                         ].map((subitem, sidx) => (
                           <button key={sidx} onClick={() => { subitem.action(); setIsFileMenuOpen(false); setActiveSubmenu(null); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                             {subitem.label}

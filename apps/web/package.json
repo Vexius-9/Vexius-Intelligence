@@ -43,6 +43,8 @@
     "@tiptap/starter-kit": "^3.30.2",
     "ai": "^3.4.33",
     "bs58": "^6.0.0",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^13.1.0",
     "handsontable": "^18.0.0",
     "hyperformula": "^3.4.0",
@@ -54,9 +56,11 @@
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.5.0",
     "remark-gfm": "^4.0.1",
-    "tiptap-pagination-plus": "^3.1.0"
+    "tiptap-pagination-plus": "^3.1.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
