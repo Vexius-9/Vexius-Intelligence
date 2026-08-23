@@ -60,6 +60,30 @@ export const VexiusDocEditor = forwardRef<VexiusDocEditorRef, VexiusDocEditorPro
     }, 2000);
   };
 
+  useEffect(() => {
+    const handleForceSave = () => {
+      if (editorRef.current) {
+        const content = editorRef.current.getJSON();
+        if (content) {
+          // Immediately save
+          if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+          const token = localStorage.getItem("vexius_token");
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+          fetch(`${apiUrl}/documents/${documentId}/content`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content })
+          }).catch(e => console.error("Force save failed", e));
+        }
+      }
+    };
+    window.addEventListener('vexius:force-save', handleForceSave);
+    return () => window.removeEventListener('vexius:force-save', handleForceSave);
+  }, [documentId]);
+
   return (
     <VexiusTiptapEditor 
       ref={editorRef}

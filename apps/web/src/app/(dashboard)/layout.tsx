@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Header */}
-        <header className="dashboard-header" style={{ 
+        <header className="dashboard-header no-print" style={{ 
           height: "64px", 
           borderBottom: "1px solid var(--border-color)",
           display: "flex", 
@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
         
-        <div style={{ flex: 1, padding: "32px", overflowY: "auto" }}>
+        <div className="dashboard-content" style={{ flex: 1, padding: "32px", overflowY: "auto" }}>
           {children}
         </div>
       </main>

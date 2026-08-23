@@ -43,6 +43,7 @@ export interface VexiusTiptapEditorRef {
   getFullText: () => string;
   applyAction: (text: string) => void;
   getEditorInstance: () => any;
+  getJSON: () => string;
 }
 
 // We will generate the extensions array per component instance to avoid sharing
@@ -181,7 +182,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
         ],
         content: sanitizeContent(initialContent) || '',
         onUpdate: ({ editor: e }) => {
-          if (onUpdateRef.current) onUpdateRef.current(e.getHTML());
+          if (onUpdateRef.current) onUpdateRef.current(JSON.stringify(e.getJSON()));
         },
         onTransaction: ({ editor: e }) => {
           const pages = e.view.dom.querySelectorAll('.rm-page-break');
@@ -229,7 +230,11 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
       if (!editor) return;
       editor.chain().focus().insertContent(text).run();
     },
-    getEditorInstance: () => editor
+    getEditorInstance: () => editor,
+    getJSON: () => {
+      if (!editor) return "";
+      return JSON.stringify(editor.getJSON());
+    }
   }));
 
   if (!isMounted) return null;
@@ -242,7 +247,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
         height: '100%', 
         background: '#e5e7eb'
       }}>
-      <div style={{ zIndex: 9999, position: 'relative' }}>
+      <div className="no-print" style={{ zIndex: 9999, position: 'relative' }}>
         <VexiusRibbon editor={editor} navbarElement={navbarElement} isCopilotVisible={isCopilotVisible} />
       </div>
       
@@ -251,7 +256,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
         
         {/* Solid Left Sidebar (AI Copilot) */}
         {isCopilotVisible && sidebar && (
-          <div style={{ 
+          <div className="no-print" style={{ 
             width: '320px', 
             flexShrink: 0, 
             background: '#fff', 
@@ -265,7 +270,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
         )}
 
         {/* Scrollable Canvas */}
-        <div style={{ 
+        <div className="vexius-scroll-container" style={{ 
           flex: 1, 
           overflowY: 'auto', 
           padding: '40px 0', 
@@ -276,6 +281,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
           
           {/* Fullscreen Toggle */}
         <button
+          className="no-print"
           onClick={() => {
           const newState = !isFullscreen;
           setIsFullscreen(newState);
@@ -313,7 +319,7 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
           }
         `}</style>
 
-        <div style={{
+        <div className="vexius-document-canvas" style={{
           background: 'transparent',
           width: '100%',
           display: 'flex',
@@ -418,8 +424,8 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
       </div>
       </div>
       
-      {/* Status Bar */}
-      <div style={{
+      {/* Footer Info / Status Bar */}
+      <div className="no-print" style={{
         background: '#f3f4f6',
         borderTop: '1px solid #e5e7eb',
         padding: '2px 16px',

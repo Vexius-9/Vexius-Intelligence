@@ -6,9 +6,10 @@ import {
   List, ListOrdered, CheckSquare, Palette, Highlighter, RemoveFormatting,
   Table as TableIcon, Image as ImageIcon, Link as LinkIcon, Quote, Minus, Code, SquareCode,
   Video, CornerDownLeft, Grid, Trash2, Bot, Save, Wand2,
-  ShieldCheck, Clock, Share2, FolderOpen, Info
+  ShieldCheck, Clock, Share2, FolderOpen, Info, Download, ChevronRight
 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
+import { toast } from 'react-hot-toast';
 
 export interface VexiusRibbonProps {
   editor: Editor | null;
@@ -20,6 +21,7 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
   const [activeTab, setActiveTab] = React.useState('Home');
   const [isFileMenuOpen, setIsFileMenuOpen] = React.useState(false);
   const [activeFileMenuTab, setActiveFileMenuTab] = React.useState('Info');
+  const [activeSubmenu, setActiveSubmenu] = React.useState<string | null>(null);
 
   if (!editor) {
     return <div style={{ height: '120px', borderBottom: '1px solid var(--border-color)' }}></div>;
@@ -102,13 +104,76 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
                   <div style={{ borderTop: '1px solid #e2e8f0', margin: '4px 0' }}></div>
                   
                   {[
-                    { icon: <Save size={16} />, label: 'Save', action: () => alert('Document saved successfully!') },
-                    { icon: <Save size={16} />, label: 'Save As...', action: () => alert('Save As Dialog') }
+                    { icon: <Save size={16} />, label: 'Save', action: () => {
+                      window.dispatchEvent(new CustomEvent('vexius:force-save'));
+                      toast.success('Document saved successfully!');
+                    }},
                   ].map((item, idx) => (
                     <button key={idx} onClick={() => { item.action(); setIsFileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                       {item.icon} {item.label}
                     </button>
                   ))}
+
+                  <div 
+                    onMouseEnter={() => setActiveSubmenu('download')}
+                    onMouseLeave={() => setActiveSubmenu(null)}
+                    style={{ position: 'relative' }}
+                  >
+                    <button 
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: activeSubmenu === 'download' ? '#f1f5f9' : 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }}
+                    >
+                      <Download size={16} /> Download
+                      <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
+                    </button>
+                    {activeSubmenu === 'download' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '100%',
+                        background: '#fff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        minWidth: '240px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: '4px',
+                        zIndex: 1000,
+                        marginLeft: '4px'
+                      }}>
+                        {[
+                          { label: 'Microsoft Word (.docx)', action: () => alert('Download DOCX') },
+                          { label: 'Dokumen PDF (.pdf)', action: () => window.print() },
+                          { label: 'Format OpenDocument (.odt)', action: () => alert('Download ODT') },
+                          { label: 'Teks Biasa (.txt)', action: () => {
+                              const blob = new Blob([editor.getText()], { type: 'text/plain' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'document.txt';
+                              a.click();
+                              URL.revokeObjectURL(url);
+                          }},
+                          { label: 'Rich Text Format (.rtf)', action: () => alert('Download RTF') },
+                          { label: 'Halaman Web (.html, zip)', action: () => {
+                              const blob = new Blob([editor.getHTML()], { type: 'text/html' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'document.html';
+                              a.click();
+                              URL.revokeObjectURL(url);
+                          }},
+                          { label: 'Publikasi EPUB (.epub)', action: () => alert('Download EPUB') },
+                          { label: 'Markdown (.md)', action: () => alert('Download MD') }
+                        ].map((subitem, sidx) => (
+                          <button key={sidx} onClick={() => { subitem.action(); setIsFileMenuOpen(false); setActiveSubmenu(null); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            {subitem.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <div style={{ borderTop: '1px solid #e2e8f0', margin: '4px 0' }}></div>
 
@@ -120,40 +185,20 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
                       {item.icon} {item.label}
                     </button>
                   ))}
-
-                  <div style={{ borderTop: '1px solid #e2e8f0', margin: '4px 0' }}></div>
-
-                  {[
-                    { icon: <Code size={16} />, label: 'Export as HTML', action: () => {
-                        const blob = new Blob([editor.getHTML()], { type: 'text/html' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'document.html';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }},
-                    { icon: <FileText size={16} />, label: 'Export as TXT', action: () => {
-                        const blob = new Blob([editor.getText()], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'document.txt';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    }}
-                  ].map((item, idx) => (
-                    <button key={idx} onClick={() => { item.action(); setIsFileMenuOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                      {item.icon} {item.label}
-                    </button>
-                  ))}
                 </div>
               </>
             )}
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Save">
+            <button 
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('vexius:force-save'));
+                toast.success('Document saved successfully!');
+              }}
+              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+              title="Save"
+            >
               <Save size={18} />
             </button>
             <button onClick={() => editor.chain().focus().undo().run()} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Undo">
