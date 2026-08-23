@@ -58,7 +58,7 @@ export class AiController {
 
   @Post('inline-action')
   async inlineAction(
-    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf'; text?: string; workspaceId?: string; documentId?: string },
+    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide'; text?: string; workspaceId?: string; documentId?: string },
     @Req() req: FastifyRequest
   ) {
     if (!body.action) {

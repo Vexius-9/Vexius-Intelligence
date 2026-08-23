@@ -54,13 +54,39 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
       return `Currently editing Slide ${currentSlideIndex + 1}`;
     },
     applyAction: (text: string) => {
-      // Just append text to the current slide for prototype
+      // If the text seems like a complete slide (e.g. contains <h1>, <ul>), 
+      // check if it's meant to replace or append via context
       const newSlides = [...slides];
-      newSlides[currentSlideIndex] += `<br/>${text}`;
+      
+      // If we are replacing the current slide
+      if (text.includes('<!-- ACTION:REPLACE_SLIDE -->')) {
+        const cleanText = text.replace('<!-- ACTION:REPLACE_SLIDE -->', '').trim();
+        newSlides[currentSlideIndex] = cleanText;
+      } 
+      // If we are creating a new slide
+      else if (text.includes('<!-- ACTION:NEW_SLIDE -->')) {
+        const cleanText = text.replace('<!-- ACTION:NEW_SLIDE -->', '').trim();
+        newSlides.push(cleanText);
+        setCurrentSlideIndex(newSlides.length - 1);
+      }
+      // Otherwise append to current slide
+      else {
+        newSlides[currentSlideIndex] += `<br/>${text}`;
+      }
+      
       setSlides(newSlides);
       saveContent(newSlides);
     }
   }));
+
+  const handleFormat = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (slideRef.current) {
+      slideRef.current.focus();
+      handleInput(); // Trigger save
+    }
+  };
+
 
   const saveContent = async (data: string[]) => {
     try {
@@ -103,11 +129,30 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', background: '#f3f4f6' }}>
       
       {/* Top Ribbon */}
-      <VexiusSlideRibbon navbarElement={navbarElement} />
+      <VexiusSlideRibbon 
+        navbarElement={navbarElement} 
+        isCopilotVisible={isCopilotVisible} 
+        onFormat={handleFormat}
+      />
 
-      {/* Main Area: Thumbnails + Canvas + Copilot */}
+      {/* Main Area: Copilot + Thumbnails + Canvas */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         
+        {/* Left Sidebar (AI Copilot) */}
+        {isCopilotVisible && sidebar && (
+          <div style={{ 
+            width: '320px', 
+            flexShrink: 0, 
+            background: '#fff', 
+            borderRight: '1px solid #e5e7eb',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            {sidebar}
+          </div>
+        )}
+
         {/* Left Thumbnails Pane */}
         <div style={{ 
           width: '200px', 
@@ -161,14 +206,6 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
         {/* Center Canvas */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto', position: 'relative' }}>
           
-          {/* Decorative Badge on Canvas Area (like Vantis UI) */}
-          <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', padding: '4px 8px', borderRadius: '4px', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>
-             <div style={{ background: '#10b981', color: '#fff', padding: '2px', borderRadius: '4px' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="m19 12-7 7"/></svg>
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Vexius AI</span>
-          </div>
-
           <div style={{ 
             width: '960px', 
             height: '540px', 
@@ -196,20 +233,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
           </div>
         </div>
 
-        {/* Right Sidebar (AI Copilot) */}
-        {isCopilotVisible && sidebar && (
-          <div style={{ 
-            width: '320px', 
-            flexShrink: 0, 
-            background: '#fff', 
-            borderLeft: '1px solid #e5e7eb',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
-            {sidebar}
-          </div>
-        )}
+
 
       </div>
 

@@ -156,7 +156,7 @@ export class AiService {
     return result.toTextStreamResponse();
   }
 
-  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf', text: string, workspaceId?: string, userId?: string, documentId?: string) {
+  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide', text: string, workspaceId?: string, userId?: string, documentId?: string) {
     if ((!text || text.trim() === "") && documentId) {
       // Fetch document chunks if text is empty
       const chunks = await this.prisma.documentChunk.findMany({
@@ -228,6 +228,12 @@ export class AiService {
       prompt = `You are an expert document summarizer. Please provide a concise, high-level summary of the following PDF text. Highlight the main ideas.\n\nPDF Text: ${text}`;
     } else if (action === 'generate_table') {
       prompt = `You are a Spreadsheet/Excel data generation assistant. Based on the user's description, create a complete table structure. You must return ONLY a raw JSON 2D Array of strings and numbers (e.g., [["Name", "Age"], ["John", 30]]). Do NOT include any markdown code blocks, formatting, or extra text. Description: ${text}`;
+    } else if (action === 'text_to_bullets') {
+      prompt = `You are an expert presentation designer. Convert the following text into concise, professional bullet points suitable for a presentation slide. Return only the bullet points.\n\nText: ${text}`;
+    } else if (action === 'speaker_notes') {
+      prompt = `You are an expert public speaker. Generate clear and engaging speaker notes for a presentation based on the following slide content. The notes should help the presenter elaborate on the points naturally.\n\nSlide Content: ${text}`;
+    } else if (action === 'generate_slide') {
+      prompt = `You are an expert presentation designer. Generate a complete slide (HTML structure) based on the following topic or text. Use standard HTML tags like <h1>, <h2>, <ul>, <li>, <p>. Return only the HTML content, no markdown code blocks.\n\nTopic/Text: ${text}`;
     } else {
       throw new BadRequestException('Invalid action');
     }

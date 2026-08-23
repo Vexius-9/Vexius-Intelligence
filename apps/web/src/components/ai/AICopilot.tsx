@@ -71,7 +71,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
     }
   }, [messages, isLoading, isProcessingAction]);
 
-  const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf') => {
+  const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide') => {
     if (!getCurrentSelection || !onApplyAction) {
       toast.error("Inline actions are not available in this context.");
       return;
@@ -88,7 +88,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       }
       
       if (!text || text.trim() === "") {
-        if (action === 'summarize_pdf' || action === 'summarize' || action === 'slide_structure') {
+        if (action === 'summarize_pdf' || action === 'summarize' || action === 'slide_structure' || action === 'generate_slide') {
           text = documentContext?.documentContent || "";
         }
         
@@ -357,6 +357,36 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                     style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}>
                     <CheckCircle size={14} /> Apply to {documentContext?.documentType === 'spreadsheet' ? 'Sheet' : documentContext?.documentType === 'presentation' ? 'Slide' : 'Document'}
                   </button>
+                  {documentContext?.documentType === 'presentation' && (
+                    <button 
+                      onClick={() => {
+                        if (onApplyAction) {
+                          let text = msg.content;
+                          const jsonMatch = text.match(/```(?:html|json)?\s*([\s\S]*?)```/);
+                          if (jsonMatch) text = jsonMatch[1];
+                          onApplyAction(`<!-- ACTION:NEW_SLIDE -->\n${text}`);
+                        }
+                      }}
+                      style={{ padding: '6px 12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}
+                    >
+                      <CheckCircle size={14} /> Insert as New Slide
+                    </button>
+                  )}
+                  {documentContext?.documentType === 'presentation' && (
+                    <button 
+                      onClick={() => {
+                        if (onApplyAction) {
+                          let text = msg.content;
+                          const jsonMatch = text.match(/```(?:html|json)?\s*([\s\S]*?)```/);
+                          if (jsonMatch) text = jsonMatch[1];
+                          onApplyAction(`<!-- ACTION:REPLACE_SLIDE -->\n${text}`);
+                        }
+                      }}
+                      style={{ padding: '6px 12px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}
+                    >
+                      <CheckCircle size={14} /> Replace Current Slide
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -378,6 +408,42 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       {/* Input Area */}
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)" }}>
         
+        {/* Quick Actions for Presentation */}
+        {documentContext?.documentType === 'presentation' && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <button 
+              onClick={() => handleInlineAction('generate_slide')}
+              disabled={isLoading || isProcessingAction}
+              style={{
+                background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.2)',
+                padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+            >
+              <Sparkles size={12} /> Generate Slide
+            </button>
+            <button 
+              onClick={() => handleInlineAction('text_to_bullets')}
+              disabled={isLoading || isProcessingAction}
+              style={{
+                background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)',
+                padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+            >
+              <Type size={12} /> Text to Bullets
+            </button>
+            <button 
+              onClick={() => handleInlineAction('speaker_notes')}
+              disabled={isLoading || isProcessingAction}
+              style={{
+                background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)',
+                padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+            >
+              <Edit3 size={12} /> Speaker Notes
+            </button>
+          </div>
+        )}
+
         {/* Quick Actions for PDF */}
         {documentContext?.documentType === 'pdf' && (
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>

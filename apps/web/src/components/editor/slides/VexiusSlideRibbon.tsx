@@ -10,14 +10,17 @@ import {
 
 export interface VexiusSlideRibbonProps {
   navbarElement?: React.ReactNode;
+  isCopilotVisible?: boolean;
+  onFormat?: (command: string, value?: string) => void;
 }
 
-export function VexiusSlideRibbon({ navbarElement }: VexiusSlideRibbonProps) {
+export function VexiusSlideRibbon({ navbarElement, isCopilotVisible, onFormat }: VexiusSlideRibbonProps) {
   const [activeTab, setActiveTab] = React.useState('Home');
 
-  const RibbonButton = ({ onClick, isActive, children }: { onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, isActive?: boolean, children: React.ReactNode }) => (
+  const RibbonButton = ({ onClick, onMouseDown, isActive, children }: { onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, onMouseDown?: (e: React.MouseEvent<HTMLButtonElement>) => void, isActive?: boolean, children: React.ReactNode }) => (
     <button 
       onClick={onClick}
+      onMouseDown={onMouseDown}
       style={{
         padding: '6px 8px',
         borderRadius: '4px',
@@ -89,12 +92,19 @@ export function VexiusSlideRibbon({ navbarElement }: VexiusSlideRibbonProps) {
       <div style={{ display: 'flex', padding: '8px 16px', gap: '4px', alignItems: 'center', background: '#f9fafb', minHeight: '60px', overflowX: 'auto' }}>
         
         {/* Vexius AI Group */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', paddingRight: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontWeight: 600 }}>
-            <div style={{ background: '#10b981', color: '#fff', padding: '2px', borderRadius: '4px' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="m19 12-7 7"/></svg>
-            </div>
-            Vexius
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '16px' }}>
+          <div style={{ display: 'flex', gap: '12px', height: '100%', alignItems: 'center' }}>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('vexius:toggle-ai'))} style={{ 
+              border: isCopilotVisible ? '1px solid #a855f7' : '1px solid transparent',
+              background: isCopilotVisible ? '#f3e8ff' : 'transparent', 
+              borderRadius: '6px', padding: '7px', 
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' 
+            }}>
+              <div style={{ padding: '4px', display: 'flex' }}>
+                <img src="/logo.png" alt="Vexius AI" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+              </div>
+              <span style={{ fontSize: '0.75rem', color: isCopilotVisible ? '#9333ea' : '#111827', fontWeight: 500 }}>Vexius AI</span>
+            </button>
           </div>
         </div>
 
@@ -147,19 +157,37 @@ export function VexiusSlideRibbon({ navbarElement }: VexiusSlideRibbonProps) {
         {/* Typography */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{ display: 'flex', gap: '4px' }}>
-            <select style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', background: '#fff' }}>
-              <option>Calibri</option>
-              <option>Arial</option>
+            <select 
+              onChange={(e) => onFormat && onFormat('fontName', e.target.value)}
+              style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', background: '#fff' }}
+            >
+              <option value="Calibri">Calibri</option>
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
             </select>
-            <select style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', background: '#fff', width: '50px' }}>
-              <option>18</option>
-              <option>24</option>
+            <select 
+              onChange={(e) => onFormat && onFormat('fontSize', e.target.value)}
+              style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '2px 4px', fontSize: '12px', background: '#fff', width: '50px' }}
+            >
+              <option value="1">10</option>
+              <option value="2">13</option>
+              <option value="3">16</option>
+              <option value="4">18</option>
+              <option value="5">24</option>
+              <option value="6">32</option>
+              <option value="7">48</option>
             </select>
+            <input 
+              type="color" 
+              onChange={(e) => onFormat && onFormat('foreColor', e.target.value)}
+              style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '0', background: '#fff', width: '24px', height: '24px', cursor: 'pointer' }}
+            />
           </div>
           <div style={{ display: 'flex', gap: '2px' }}>
-            <RibbonButton><Bold size={16} /></RibbonButton>
-            <RibbonButton><Italic size={16} /></RibbonButton>
-            <RibbonButton><Underline size={16} /></RibbonButton>
+            <RibbonButton onMouseDown={(e) => e.preventDefault()} onClick={() => onFormat && onFormat('bold')}><Bold size={16} /></RibbonButton>
+            <RibbonButton onMouseDown={(e) => e.preventDefault()} onClick={() => onFormat && onFormat('italic')}><Italic size={16} /></RibbonButton>
+            <RibbonButton onMouseDown={(e) => e.preventDefault()} onClick={() => onFormat && onFormat('underline')}><Underline size={16} /></RibbonButton>
           </div>
         </div>
 
@@ -168,16 +196,16 @@ export function VexiusSlideRibbon({ navbarElement }: VexiusSlideRibbonProps) {
         {/* Paragraph & Formatting */}
         <div style={{ display: 'flex', gap: '2px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '64px' }}>
-            <RibbonButton><AlignLeft size={20} /></RibbonButton>
-            <span style={{ fontSize: '10px', color: '#6b7280' }}>Paragraph</span>
+            <RibbonButton onMouseDown={(e) => e.preventDefault()} onClick={() => onFormat && onFormat('justifyLeft')}><AlignLeft size={20} /></RibbonButton>
+            <span style={{ fontSize: '10px', color: '#6b7280' }}>Left</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '64px' }}>
-            <RibbonButton><PanelRight size={20} /></RibbonButton>
-            <span style={{ fontSize: '10px', color: '#6b7280' }}>Format Pane</span>
+            <RibbonButton onMouseDown={(e) => e.preventDefault()} onClick={() => onFormat && onFormat('justifyCenter')}><AlignCenter size={20} /></RibbonButton>
+            <span style={{ fontSize: '10px', color: '#6b7280' }}>Center</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '64px' }}>
-            <RibbonButton><AlignCenter size={20} /></RibbonButton>
-            <span style={{ fontSize: '10px', color: '#6b7280' }}>Align</span>
+            <RibbonButton onMouseDown={(e) => e.preventDefault()} onClick={() => onFormat && onFormat('justifyRight')}><AlignRight size={20} /></RibbonButton>
+            <span style={{ fontSize: '10px', color: '#6b7280' }}>Right</span>
           </div>
         </div>
 
