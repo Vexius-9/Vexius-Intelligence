@@ -266,6 +266,15 @@ export class DocumentsService {
 
     // Ensure name has the correct extension if not provided
     let finalName = name || `Untitled ${docType}`;
+    let displayExtension = docType === 'document' ? 'docx' : (docType === 'spreadsheet' ? 'xlsx' : 'pptx');
+    if (!finalName.endsWith(`.${displayExtension}`)) {
+        const extMatch = finalName.match(/\.([^.]+)$/);
+        if (extMatch) {
+            finalName = finalName.replace(extMatch[0], `.${displayExtension}`);
+        } else {
+            finalName = `${finalName}.${displayExtension}`;
+        }
+    }
 
     // 3. Setup document in DB
     const documentId = require('crypto').randomUUID();
