@@ -275,11 +275,11 @@ export function VexiusSheetRibbon({ hotInstance, navbarElement }: VexiusSheetRib
                                   // Borders from AI generation / customBorders plugin
                                   const customBorder = bordersObj[`${r}-${c}`];
                                   if (customBorder) {
-                                    const cBorder: any = { ...cell.border } || {};
+                                    const cBorder: any = { ...(cell.border || {}) };
                                     if (customBorder.top) cBorder.top = { style: 'thin', color: { argb: 'FF000000' } };
                                     if (customBorder.bottom) cBorder.bottom = { style: 'thin', color: { argb: 'FF000000' } };
-                                    if (customBorder.left) cBorder.left = { style: 'thin', color: { argb: 'FF000000' } };
-                                    if (customBorder.right) cBorder.right = { style: 'thin', color: { argb: 'FF000000' } };
+                                    if (customBorder.left || customBorder.start) cBorder.left = { style: 'thin', color: { argb: 'FF000000' } };
+                                    if (customBorder.right || customBorder.end) cBorder.right = { style: 'thin', color: { argb: 'FF000000' } };
                                     cell.border = cBorder;
                                   }
                                 }
