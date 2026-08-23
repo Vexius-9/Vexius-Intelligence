@@ -498,16 +498,45 @@ export default function DashboardPage() {
                 
                 const cardContent = (
                   <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flex: 1 }}>
-                      <div style={{ color: isFolder ? "#eab308" : "var(--text-secondary)" }}>
-                        {isFolder ? <Folder size={24} fill="currentColor" fillOpacity={0.2} /> : <FileText size={24} />}
+                    <div style={{ 
+                      flex: 1, 
+                      background: isFolder ? "transparent" : "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderBottom: isFolder ? "none" : "1px solid var(--border-color)",
+                      position: "relative",
+                      overflow: "hidden"
+                    }}>
+                      {/* Fake lines for document preview */}
+                      {!isFolder && (
+                        <div style={{ position: "absolute", top: "15%", left: "15%", right: "15%", display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <div style={{ height: "6px", background: "#f1f5f9", borderRadius: "3px", width: "50%", marginBottom: "4px" }} />
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "100%" }} />
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "90%" }} />
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "95%" }} />
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "80%", marginBottom: "8px" }} />
+                          
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "100%" }} />
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "85%" }} />
+                          <div style={{ height: "4px", background: "#f1f5f9", borderRadius: "2px", width: "95%" }} />
+                        </div>
+                      )}
+                      
+                      <div style={{ color: isFolder ? "#eab308" : "var(--text-secondary)", zIndex: 1, opacity: isFolder ? 1 : 0.1 }}>
+                        {isFolder ? <Folder size={64} fill="currentColor" fillOpacity={0.2} /> : (
+                          doc.type === 'spreadsheet' ? <FileText size={64} color="#10b981" /> :
+                          doc.type === 'presentation' ? <FileText size={64} color="#f97316" /> :
+                          <FileText size={64} color="#3b82f6" />
+                        )}
                       </div>
-                      <div style={{ display: "flex", gap: "4px" }}>
+
+                      <div style={{ position: "absolute", top: "12px", right: "12px", display: "flex", gap: "4px", zIndex: 2 }}>
                         {doc.type === 'spreadsheet' && (
                           <button
                             className="agent-btn"
                             onClick={(e) => handleRunAgent(e, doc.id, 'financial-analyst')}
-                            style={{ opacity: 0, transition: "opacity 0.2s", background: "rgba(255,255,255,0.1)", border: "none", color: "#a855f7", cursor: "pointer", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
+                            style={{ opacity: 0, transition: "opacity 0.2s", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
                             title="Run Financial Analyst Agent"
                           >
                             <Sparkles size={12} /> Analyze
@@ -517,7 +546,7 @@ export default function DashboardPage() {
                           <button
                             className="agent-btn"
                             onClick={(e) => handleRunAgent(e, doc.id, 'legal-reviewer')}
-                            style={{ opacity: 0, transition: "opacity 0.2s", background: "rgba(255,255,255,0.1)", border: "none", color: "#a855f7", cursor: "pointer", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
+                            style={{ opacity: 0, transition: "opacity 0.2s", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
                             title="Run Legal Reviewer Agent"
                           >
                             <Sparkles size={12} /> Review
@@ -529,22 +558,31 @@ export default function DashboardPage() {
                           style={{
                             opacity: 0,
                             transition: "opacity 0.2s",
-                            background: "transparent",
+                            background: "rgba(0,0,0,0.6)",
                             border: "none",
                             color: "#ef4444",
                             cursor: "pointer",
-                            padding: "4px"
+                            padding: "6px",
+                            borderRadius: "4px"
                           }}
                           title="Delete Document"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
-                    <h3 style={{ fontSize: "0.95rem", fontWeight: 500, marginBottom: "4px" }}>{doc.name}</h3>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                      {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
-                    </p>
+
+                    <div style={{ padding: "12px 16px", background: "var(--bg-secondary)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                        <div style={{ color: isFolder ? "#eab308" : (doc.type === 'spreadsheet' ? "#10b981" : doc.type === 'presentation' ? "#f97316" : "#3b82f6") }}>
+                          {isFolder ? <Folder size={16} fill="currentColor" /> : <FileText size={16} />}
+                        </div>
+                        <h3 style={{ fontSize: "0.95rem", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{doc.name}</h3>
+                      </div>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", paddingLeft: "24px" }}>
+                        {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </>
                 );
 
@@ -553,19 +591,21 @@ export default function DashboardPage() {
                   background: "var(--bg-secondary)",
                   border: "1px solid var(--border-color)",
                   borderRadius: "8px",
-                  padding: "16px",
+                  padding: 0,
                   textDecoration: "none",
                   color: "inherit",
                   display: "flex",
                   flexDirection: "column" as const,
-                  transition: "border-color 0.2s",
+                  transition: "border-color 0.2s, transform 0.2s",
                   position: "relative" as const,
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  overflow: "hidden"
                 };
 
                 const hoverHandlers = {
                   onMouseOver: (e: React.MouseEvent<HTMLElement>) => {
                     e.currentTarget.style.borderColor = isFolder ? "#eab308" : "var(--text-primary)";
+                    e.currentTarget.style.transform = "translateY(-4px)";
                     const trashBtn = e.currentTarget.querySelector('.trash-btn') as HTMLElement;
                     if(trashBtn) trashBtn.style.opacity = "1";
                     const agentBtn = e.currentTarget.querySelector('.agent-btn') as HTMLElement;
@@ -573,6 +613,7 @@ export default function DashboardPage() {
                   },
                   onMouseOut: (e: React.MouseEvent<HTMLElement>) => {
                     e.currentTarget.style.borderColor = "var(--border-color)";
+                    e.currentTarget.style.transform = "translateY(0)";
                     const trashBtn = e.currentTarget.querySelector('.trash-btn') as HTMLElement;
                     if(trashBtn) trashBtn.style.opacity = "0";
                     const agentBtn = e.currentTarget.querySelector('.agent-btn') as HTMLElement;
