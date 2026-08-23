@@ -98,9 +98,8 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
       
       let cleanText = text.replace('<!-- ACTION:SPEAKER_NOTES -->', '').replace('<!-- ACTION:REPLACE_SLIDE -->', '').replace('<!-- ACTION:NEW_SLIDE -->', '').trim();
       
-      if (isNotes) {
-        let htmlText = cleanText;
-        // Basic Markdown to HTML if it's not already HTML
+      const parseMarkdownToHtml = (textPart: string) => {
+        let htmlText = textPart;
         const isHtml = /<[a-z][\s\S]*>/i.test(htmlText);
         if (!isHtml) {
           htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -110,7 +109,11 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
           htmlText = htmlText.replace(/^# (.*$)/gim, '<h1>$1</h1>');
           htmlText = htmlText.split('\n\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
         }
-        newNotes[currentSlideIndex] = htmlText;
+        return htmlText;
+      };
+
+      if (isNotes) {
+        newNotes[currentSlideIndex] = parseMarkdownToHtml(cleanText);
         setNotes(newNotes);
         saveContent(slides, newNotes);
         return;
@@ -123,6 +126,8 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
         const slideRegex = /(?:^|\n|<[^>]+>|#+\s*\*?)\s*\*?Slide\s*\d+[:\-]?\s*\*?(?:<\/[^>]+>)?/gi;
         parts = parts[0].split(slideRegex).map(s => s.trim()).filter(s => s.length > 0);
       }
+      
+      parts = parts.map(parseMarkdownToHtml);
       
       if (parts.length > 1) {
         if (isReplace) {
