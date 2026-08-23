@@ -624,6 +624,53 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                 )}
               </div>
             )}
+            
+            {/* AI Loading Overlay */}
+            {isGeneratingFormula && (
+              <div style={{ 
+                position: 'absolute', 
+                top: 0, left: 0, right: 0, bottom: 0, 
+                background: 'rgba(255, 255, 255, 0.75)', 
+                zIndex: 99999, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                backdropFilter: 'blur(2px)'
+              }}>
+                <div style={{
+                  background: 'white',
+                  padding: '16px 24px',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '12px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: '#4f46e5' }}>
+                    <Sparkles className="animate-pulse" size={24} />
+                    <span style={{ fontSize: '14px', fontWeight: 600 }}>Vexius AI is crafting your table...</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', background: '#eef2ff', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      width: '50%', 
+                      background: 'linear-gradient(90deg, #4f46e5, #818cf8, #4f46e5)', 
+                      borderRadius: '2px',
+                      animation: 'slide 1.5s ease-in-out infinite' 
+                    }} />
+                  </div>
+                  <style>{`
+                    @keyframes slide {
+                      0% { transform: translateX(-100%); }
+                      100% { transform: translateX(200%); }
+                    }
+                  `}</style>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
