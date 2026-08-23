@@ -23,6 +23,8 @@ export interface VexiusPdfRibbonProps {
   onSelectTool: (tool: PdfTool) => void;
   activeColor: string;
   onSelectColor: (color: string) => void;
+  pageNumber: number;
+  numPages: number;
 }
 
 export function VexiusPdfRibbon({ 
@@ -39,7 +41,9 @@ export function VexiusPdfRibbon({
   activeTool,
   onSelectTool,
   activeColor,
-  onSelectColor
+  onSelectColor,
+  pageNumber,
+  numPages
 }: VexiusPdfRibbonProps) {
 
   const RibbonButton = ({ onClick, isActive, children, label, activeColor = '#fee2e2' }: { onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, isActive?: boolean, children: React.ReactNode, label: string, activeColor?: string }) => (
@@ -104,13 +108,13 @@ export function VexiusPdfRibbon({
         {/* Zoom Group */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', padding: '2px', fontSize: '12px' }}>
-            <span style={{ padding: '0 4px', borderRight: '1px solid #d1d5db' }}>1</span>
-            <span style={{ padding: '0 4px', color: '#6b7280' }}>of 5</span>
+            <span style={{ padding: '0 4px', borderRight: '1px solid #d1d5db', color: '#374151' }}>{pageNumber}</span>
+            <span style={{ padding: '0 4px', color: '#6b7280' }}>of {numPages}</span>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button onClick={onZoomOut} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}><ZoomOut size={16} color="#6b7280" /></button>
-            <span style={{ fontSize: '12px', width: '36px', textAlign: 'center' }}>{Math.round(zoomLevel * 100)}%</span>
+            <span style={{ fontSize: '12px', width: '36px', textAlign: 'center', color: '#374151' }}>{Math.round(zoomLevel * 100)}%</span>
             <button onClick={onZoomIn} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}><ZoomIn size={16} color="#6b7280" /></button>
           </div>
 

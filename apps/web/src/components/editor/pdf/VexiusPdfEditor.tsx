@@ -216,7 +216,7 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
 
   useImperativeHandle(ref, () => ({
     getFullText: () => "", // Handled server-side by AI service on the fly or chunked
-    getCurrentSelection: () => `Currently viewing Page ${pageNumber} of ${numPages}`,
+    getCurrentSelection: () => "",
     applyAction: () => {}
   }));
 
@@ -251,6 +251,8 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
         onSelectTool={setActiveTool}
         activeColor={activeColor}
         onSelectColor={setActiveColor}
+        pageNumber={pageNumber}
+        numPages={numPages}
       />
 
       {/* Main Area: Sidebar + Thumbnails + Canvas */}

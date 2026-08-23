@@ -314,7 +314,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                   {msg.content}
                 </ReactMarkdown>
               )}
-              {msg.role === "assistant" && msg.id !== "1" && (
+              {msg.role === "assistant" && msg.id !== "1" && documentContext?.documentType !== 'pdf' && (
                 <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                   <button 
                     onClick={() => {
@@ -367,6 +367,64 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
 
       {/* Input Area */}
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)" }}>
+        
+        {/* Quick Actions for PDF */}
+        {documentContext?.documentType === 'pdf' && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <button 
+              onClick={() => handleInlineAction('summarize_pdf')}
+              disabled={isLoading || isProcessingAction}
+              style={{
+                background: 'rgba(168, 85, 247, 0.1)',
+                color: '#a855f7',
+                border: '1px solid rgba(168, 85, 247, 0.2)',
+                padding: '6px 12px',
+                borderRadius: '16px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Sparkles size={12} />
+              Summarize PDF
+            </button>
+            <button 
+              onClick={() => {
+                if (onAiStart) onAiStart();
+                setIsProcessingAction(true);
+                const prompt = "Extract and list the key points of this document.";
+                append({ id: Date.now().toString(), role: 'user', content: prompt })
+                  .finally(() => {
+                    setIsProcessingAction(false);
+                    if (onAiEnd) onAiEnd();
+                  });
+              }}
+              disabled={isLoading || isProcessingAction}
+              style={{
+                background: 'rgba(59, 130, 246, 0.1)',
+                color: '#3b82f6',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                padding: '6px 12px',
+                borderRadius: '16px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Sparkles size={12} />
+              Key Points
+            </button>
+          </div>
+        )}
+
         <form onSubmit={overrideHandleSubmit} style={{
           display: "flex",
           background: "var(--bg-primary)",

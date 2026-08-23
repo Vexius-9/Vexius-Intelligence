@@ -177,11 +177,17 @@ export class AiService {
           try {
             const fileBuffer = await storageClient.downloadFile('vexius-documents', doc.storageKey);
             if (doc.type === 'pdf') {
-              // pdf-parse is CommonJS, so we need .default when dynamically imported
+              // pdf-parse v2.4.5 uses PDFParse class
               const pdfParseModule = await Function('return import("pdf-parse")')();
-              const pdfParse = pdfParseModule.default || pdfParseModule;
-              const pdfData = await pdfParse(fileBuffer);
-              text = pdfData.text;
+              const PDFParseClass = pdfParseModule.PDFParse || pdfParseModule.default?.PDFParse;
+              if (PDFParseClass) {
+                const parser = new PDFParseClass({ data: fileBuffer });
+                const pdfData = await parser.getText();
+                text = pdfData.text;
+                await parser.destroy();
+              } else {
+                throw new Error("PDFParse class not found in module");
+              }
             } else if (doc.type === 'document' || doc.type === 'spreadsheet' || doc.type === 'presentation') {
               const officeParser = await Function('return import("officeparser")')();
               text = await officeParser.parseOfficeAsync(fileBuffer);
