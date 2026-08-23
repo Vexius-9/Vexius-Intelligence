@@ -255,10 +255,7 @@ export class DocumentsService {
         type: "doc",
         content: [
           {
-            type: "paragraph",
-            content: [
-              { type: "text", text: "Start writing..." }
-            ]
+            type: "paragraph"
           }
         ]
       };
@@ -269,15 +266,6 @@ export class DocumentsService {
 
     // Ensure name has the correct extension if not provided
     let finalName = name || `Untitled ${docType}`;
-    if (!finalName.endsWith(`.${extension}`)) {
-        // If it has a different extension, let's just append or replace
-        const extMatch = finalName.match(/\.([^.]+)$/);
-        if (extMatch) {
-            finalName = finalName.replace(extMatch[0], `.${extension}`);
-        } else {
-            finalName = `${finalName}.${extension}`;
-        }
-    }
 
     // 3. Setup document in DB
     const documentId = require('crypto').randomUUID();

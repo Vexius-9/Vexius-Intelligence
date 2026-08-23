@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Route Guard: If not connected, redirect to login
   React.useEffect(() => {
     if (!connected) {
-      router.push("/login");
+      router.push("/");
     }
   }, [connected, router]);
 
