@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { EditorState, Transaction } from 'prosemirror-state';
-import { EditorView } from 'prosemirror-view';
-import { Schema, Node } from 'prosemirror-model';
-import { keymap } from 'prosemirror-keymap';
-import { baseKeymap } from 'prosemirror-commands';
-import { history, undo, redo } from 'prosemirror-history';
+import { EditorState, Transaction } from '@tiptap/pm/state';
+import { EditorView } from '@tiptap/pm/view';
+import { Schema, Node } from '@tiptap/pm/model';
+import { keymap } from '@tiptap/pm/keymap';
+import { baseKeymap } from '@tiptap/pm/commands';
+import { history, undo, redo } from '@tiptap/pm/history';
 
 // A simple React wrapper around ProseMirror
 export interface ProseMirrorEditorProps {

@@ -1,4 +1,4 @@
-import { Schema, NodeSpec, MarkSpec, DOMOutputSpec } from "prosemirror-model";
+import { Schema, Node, Mark, NodeSpec, MarkSpec, DOMOutputSpec } from "@tiptap/pm/model";
 
 const pDOM: DOMOutputSpec = ["p", 0];
 const blockquoteDOM: DOMOutputSpec = ["blockquote", 0];
@@ -15,14 +15,14 @@ export const nodes: Record<string, NodeSpec> = {
     content: "inline*",
     group: "block",
     parseDOM: [{ tag: "p" }],
-    toDOM() { return pDOM; }
+    toDOM(node: Node) { return pDOM; }
   },
 
   blockquote: {
     content: "block+",
     group: "block",
     parseDOM: [{ tag: "blockquote" }],
-    toDOM() { return blockquoteDOM; }
+    toDOM(node: Node) { return blockquoteDOM; }
   },
 
   horizontal_rule: {
@@ -44,7 +44,7 @@ export const nodes: Record<string, NodeSpec> = {
       { tag: "h5", attrs: { level: 5 } },
       { tag: "h6", attrs: { level: 6 } }
     ],
-    toDOM(node) { return ["h" + node.attrs.level, 0]; }
+    toDOM(node: Node) { return ["h" + node.attrs.level, 0]; }
   },
 
   code_block: {
@@ -79,7 +79,7 @@ export const nodes: Record<string, NodeSpec> = {
         };
       }
     }],
-    toDOM(node) { return ["img", node.attrs]; }
+    toDOM(node: Node) { return ["img", node.attrs]; }
   },
 
   hard_break: {
@@ -90,10 +90,6 @@ export const nodes: Record<string, NodeSpec> = {
     toDOM() { return brDOM; }
   }
 };
-
-const emDOM: DOMOutputSpec = ["em", 0];
-const strongDOM: DOMOutputSpec = ["strong", 0];
-const codeDOM: DOMOutputSpec = ["code", 0];
 
 export const marks: Record<string, MarkSpec> = {
   link: {
@@ -108,30 +104,30 @@ export const marks: Record<string, MarkSpec> = {
         return { href: dom.getAttribute("href"), title: dom.getAttribute("title") };
       }
     }],
-    toDOM(node) { return ["a", node.attrs, 0]; }
+    toDOM(node: Mark) { return ["a", node.attrs, 0]; }
   },
 
   em: {
     parseDOM: [
       { tag: "i" }, { tag: "em" },
       { style: "font-style=italic" },
-      { style: "font-style=normal", clearMark: m => (m.type.name === "em" as any) }
+      { style: "font-style=normal", clearMark: (m: Mark) => (m.type.name === "em") }
     ],
-    toDOM() { return emDOM; }
+    toDOM(m: Mark) { return ["em", 0]; }
   },
 
   strong: {
     parseDOM: [
       { tag: "strong" }, { tag: "b" },
-      { style: "font-weight=400", clearMark: m => (m.type.name === "strong" as any) },
-      { style: "font-weight", getAttrs: (value: string) => /^(bold(er)?|[5-9]\d{2,})$/.test(value) && null }
+      { style: "font-weight=400", clearMark: (m: Mark) => (m.type.name === "strong") },
+      { style: "font-weight", getAttrs: (value: string | number) => /^(bold(er)?|[5-9]\d{2,})$/.test(value as string) ? null : false }
     ],
-    toDOM() { return strongDOM; }
+    toDOM(m: Mark) { return ["strong", 0]; }
   },
 
   code: {
     parseDOM: [{ tag: "code" }],
-    toDOM() { return codeDOM; }
+    toDOM() { return ["code", 0]; }
   }
 };
 
