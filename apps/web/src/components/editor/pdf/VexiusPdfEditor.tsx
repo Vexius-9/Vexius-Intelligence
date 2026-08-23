@@ -115,7 +115,7 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
       const bytes = await generateFinalPdfBytes();
       if (!bytes) return;
       
-      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
       const reader = new FileReader();
       
       reader.onloadend = async () => {
