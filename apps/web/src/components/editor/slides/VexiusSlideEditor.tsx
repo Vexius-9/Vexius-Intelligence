@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { VexiusSlideRibbon } from './VexiusSlideRibbon';
-import { Paperclip, CornerDownLeft } from 'lucide-react';
+import { Paperclip, CornerDownLeft, Trash2 } from 'lucide-react';
 
 export interface VexiusSlideEditorProps {
   documentId: string;
@@ -18,11 +18,30 @@ export interface VexiusSlideEditorRef {
 export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEditorProps>(({ documentId, initialContent, navbarElement, sidebar }, ref) => {
   const [slides, setSlides] = useState<string[]>(['<h1>Welcome to Vexius Slides</h1><p>Edit me...</p>']);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [hoveredSlideIndex, setHoveredSlideIndex] = useState<number | null>(null);
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(83);
   
   const slideRef = useRef<HTMLDivElement>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const deleteSlide = (indexToDelete: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (slides.length <= 1) return; // Prevent deleting the last slide
+    
+    const newSlides = [...slides];
+    newSlides.splice(indexToDelete, 1);
+    
+    setSlides(newSlides);
+    
+    if (currentSlideIndex === indexToDelete) {
+      setCurrentSlideIndex(Math.max(0, indexToDelete - 1));
+    } else if (currentSlideIndex > indexToDelete) {
+      setCurrentSlideIndex(currentSlideIndex - 1);
+    }
+    
+    saveContent(newSlides);
+  };
 
   useEffect(() => {
     const handleToggleAI = () => setIsCopilotVisible(prev => !prev);
@@ -54,24 +73,40 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
       return `Currently editing Slide ${currentSlideIndex + 1}`;
     },
     applyAction: (text: string) => {
-      // If the text seems like a complete slide (e.g. contains <h1>, <ul>), 
-      // check if it's meant to replace or append via context
-      const newSlides = [...slides];
+      let newSlides = [...slides];
       
-      // If we are replacing the current slide
-      if (text.includes('<!-- ACTION:REPLACE_SLIDE -->')) {
-        const cleanText = text.replace('<!-- ACTION:REPLACE_SLIDE -->', '').trim();
-        newSlides[currentSlideIndex] = cleanText;
-      } 
-      // If we are creating a new slide
-      else if (text.includes('<!-- ACTION:NEW_SLIDE -->')) {
-        const cleanText = text.replace('<!-- ACTION:NEW_SLIDE -->', '').trim();
-        newSlides.push(cleanText);
-        setCurrentSlideIndex(newSlides.length - 1);
-      }
-      // Otherwise append to current slide
-      else {
-        newSlides[currentSlideIndex] += `<br/>${text}`;
+      const isReplace = text.includes('<!-- ACTION:REPLACE_SLIDE -->');
+      const isNew = text.includes('<!-- ACTION:NEW_SLIDE -->');
+      
+      let cleanText = text.replace('<!-- ACTION:REPLACE_SLIDE -->', '').replace('<!-- ACTION:NEW_SLIDE -->', '').trim();
+      
+      // Parse multiple slides if formatted like "Slide 1:", "Slide 2:", etc.
+      const slideRegex = /(?:^|\n)Slide\s*\d+:\s*/gi;
+      const parts = cleanText.split(slideRegex).map(s => s.trim()).filter(s => s.length > 0);
+      
+      if (parts.length > 1) {
+        if (isReplace) {
+          // Replace current slide with the first, then append the rest immediately after
+          newSlides[currentSlideIndex] = parts[0];
+          newSlides.splice(currentSlideIndex + 1, 0, ...parts.slice(1));
+          setCurrentSlideIndex(currentSlideIndex + parts.length - 1);
+        } else if (isNew) {
+          newSlides.push(...parts);
+          setCurrentSlideIndex(newSlides.length - 1);
+        } else {
+          newSlides.push(...parts);
+          setCurrentSlideIndex(newSlides.length - 1);
+        }
+      } else {
+        // Single slide logic
+        if (isReplace) {
+          newSlides[currentSlideIndex] = cleanText;
+        } else if (isNew) {
+          newSlides.push(cleanText);
+          setCurrentSlideIndex(newSlides.length - 1);
+        } else {
+          newSlides[currentSlideIndex] += `<br/>${cleanText}`;
+        }
       }
       
       setSlides(newSlides);
@@ -153,33 +188,37 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
           </div>
         )}
 
-        {/* Left Thumbnails Pane */}
-        <div style={{ 
-          width: '200px', 
-          background: '#f9fafb', 
-          borderRight: '1px solid #e5e7eb', 
-          display: 'flex', 
-          flexDirection: 'column',
-          overflowY: 'auto',
-          padding: '16px 0'
-        }}>
+        {/* Left Sidebar (Thumbnails) */}
+        <div style={{ width: '200px', background: '#1f2937', borderRight: '1px solid #374151', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           {slides.map((s, index) => (
             <div 
               key={index}
               onClick={() => setCurrentSlideIndex(index)}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                padding: '8px 16px',
+              onMouseEnter={() => setHoveredSlideIndex(index)}
+              onMouseLeave={() => setHoveredSlideIndex(null)}
+              style={{ 
+                padding: '12px', 
                 cursor: 'pointer',
-                background: currentSlideIndex === index ? '#f3f4f6' : 'transparent',
+                background: currentSlideIndex === index ? '#374151' : 'transparent',
+                borderBottom: '1px solid #374151'
               }}
             >
-              <div style={{ width: '20px', fontSize: '12px', color: '#6b7280', paddingTop: '4px' }}>
-                {index + 1}
+              <div style={{ paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: '#9ca3af', fontWeight: 'bold' }}>{index + 1}</span>
+                {hoveredSlideIndex === index && slides.length > 1 && (
+                  <button 
+                    onClick={(e) => deleteSlide(index, e)}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}
+                    title="Delete Slide"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
-              <div style={{ 
-                flex: 1, 
+              <div 
+                className="vexius-slide-container"
+                style={{ 
+                width: '100%', 
                 aspectRatio: '16/9', 
                 background: '#fff', 
                 border: currentSlideIndex === index ? '2px solid #ea580c' : '1px solid #d1d5db',
@@ -189,6 +228,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
                 position: 'relative'
               }}>
                 <div 
+                  className="vexius-slide-content"
                   dangerouslySetInnerHTML={{ __html: s }} 
                   style={{ transform: 'scale(0.15)', transformOrigin: 'top left', width: '666%', height: '666%', padding: '20px', color: '#000' }} 
                 />
@@ -206,7 +246,9 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
         {/* Center Canvas */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto', position: 'relative' }}>
           
-          <div style={{ 
+          <div 
+            className="vexius-slide-container"
+            style={{ 
             width: '960px', 
             height: '540px', 
             background: '#fff', 
@@ -217,6 +259,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
           }}>
             <div 
               ref={slideRef}
+              className="vexius-slide-content"
               contentEditable
               onInput={handleInput}
               suppressContentEditableWarning

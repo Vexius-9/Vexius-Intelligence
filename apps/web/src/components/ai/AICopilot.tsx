@@ -318,6 +318,11 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                     table: ({ node, ...props }) => <table className="w-full text-left border-collapse my-2 text-sm" {...props} />,
                     th: ({ node, ...props }) => <th className="border-b border-gray-600 bg-gray-800/50 p-2 font-semibold" {...props} />,
                     td: ({ node, ...props }) => <td className="border-b border-gray-700/50 p-2" {...props} />,
+                    pre: ({ node, ...props }) => <pre style={{ background: "var(--bg-secondary)", padding: "12px", borderRadius: "8px", overflowX: "auto", margin: "8px 0", border: "1px solid var(--border-color)", color: "var(--text-primary)" }} {...props} />,
+                    code: ({ node, inline, ...props }: any) => inline 
+                      ? <code style={{ background: "rgba(255, 255, 255, 0.1)", padding: "2px 4px", borderRadius: "4px", fontSize: "0.85em", color: "var(--text-primary)" }} {...props} /> 
+                      : <code style={{ color: "var(--text-primary)" }} {...props} />,
+                    blockquote: ({ node, ...props }) => <blockquote style={{ borderLeft: "4px solid var(--border-color)", paddingLeft: "16px", color: "var(--text-secondary)", margin: "8px 0", background: "rgba(255,255,255,0.02)", padding: "8px 16px", borderRadius: "0 8px 8px 0" }} {...props} />,
                   }}
                 >
                   {msg.content}

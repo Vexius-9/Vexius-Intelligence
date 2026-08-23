@@ -538,3 +538,61 @@ a {
 }
 .ht-border-template-top { border-top: 1px solid #000 !important; }
 .ht-border-template-left { border-left: 1px solid #000 !important; }
+
+/* Vexius Slide Editor Styles */
+.vexius-slide-container {
+  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  color: #1f2937;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.vexius-slide-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vexius-slide-content h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #ea580c, #f97316);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+}
+
+.vexius-slide-content h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  border-bottom: 3px solid #ea580c;
+  padding-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.vexius-slide-content p {
+  font-size: 1.5rem;
+  line-height: 1.6;
+  color: #374151;
+  margin-bottom: 1.5rem;
+}
+
+.vexius-slide-content ul, .vexius-slide-content ol {
+  font-size: 1.5rem;
+  line-height: 1.8;
+  color: #374151;
+  margin-bottom: 1.5rem;
+  padding-left: 2rem;
+}
+
+.vexius-slide-content li {
+  margin-bottom: 0.5rem;
+}
+
+.vexius-slide-content li::marker {
+  color: #ea580c;
+}
