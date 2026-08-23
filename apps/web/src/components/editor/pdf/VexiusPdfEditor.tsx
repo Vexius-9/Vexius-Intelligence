@@ -21,7 +21,9 @@ export interface VexiusPdfEditorRef {
   applyAction: (text: string) => void;
 }
 
-export type PdfTool = 'select' | 'draw' | 'rectangle' | 'ellipse' | 'arrow' | 'note' | 'sign' | 'highlight' | 'underline' | 'strikethrough';
+export type PdfTool = 'select' | 'draw' | 'rectangle' | 'ellipse' | 'arrow' | 'note' | 'sign' | 'highlight' | 'underline' | 'strikethrough' | 'eraser';
+
+import * as fabric from 'fabric';
 
 export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorProps>(({ documentId, navbarElement, sidebar }, ref) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -36,6 +38,107 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
   const [activeTool, setActiveTool] = useState<PdfTool>('select');
   const [activeColor, setActiveColor] = useState<string>('#ef4444');
   const [pageDimensions, setPageDimensions] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
+
+  // Annotations state
+  const [pageAnnotations, setPageAnnotations] = useState<Record<number, any>>({});
+  const pageAnnotationsRef = useRef(pageAnnotations);
+  useEffect(() => { pageAnnotationsRef.current = pageAnnotations; }, [pageAnnotations]);
+
+  const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleAnnotationsChange = (data: any) => {
+    setPageAnnotations(prev => ({ 
+      ...prev, 
+      [pageNumber]: { 
+        data, 
+        width: pageDimensions.width, 
+        height: pageDimensions.height 
+      } 
+    }));
+    
+    // Auto-save debounce
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    saveDebounceRef.current = setTimeout(() => {
+      saveToBackend();
+    }, 2000); // 2 seconds debounce
+  };
+
+  const generateFinalPdfBytes = async (): Promise<Uint8Array | null> => {
+    if (!pdfUrl) return null;
+    try {
+      const existingPdfBytes = await fetch(pdfUrl).then(res => res.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      
+      const pages = pdfDoc.getPages();
+      
+      for (const [pageNumStr, annotationInfo] of Object.entries(pageAnnotationsRef.current)) {
+        const pageIdx = parseInt(pageNumStr) - 1;
+        if (pageIdx < 0 || pageIdx >= pages.length || !annotationInfo) continue;
+        
+        const { data, width: canvasWidth, height: canvasHeight } = annotationInfo;
+        const page = pages[pageIdx];
+        
+        // Render fabric json to an offscreen canvas with the exact dimensions it was drawn
+        const canvasEl = document.createElement('canvas');
+        canvasEl.width = canvasWidth;
+        canvasEl.height = canvasHeight;
+        const tempCanvas = new fabric.Canvas(canvasEl, { width: canvasWidth, height: canvasHeight });
+        
+        await tempCanvas.loadFromJSON(data);
+        tempCanvas.renderAll();
+        
+        const dataUrl = tempCanvas.toDataURL({ format: 'png', multiplier: 2 });
+        const pngImage = await pdfDoc.embedPng(dataUrl);
+        
+        // pdf-lib's drawImage draws from the bottom-left corner
+        // The image is scaled back down to the PDF page's original dimensions
+        const { width: pdfWidth, height: pdfHeight } = page.getSize();
+        page.drawImage(pngImage, {
+          x: 0,
+          y: 0,
+          width: pdfWidth,
+          height: pdfHeight,
+        });
+        
+        tempCanvas.dispose();
+      }
+      
+      return await pdfDoc.save();
+    } catch (e) {
+      console.error("Failed to generate final PDF", e);
+      return null;
+    }
+  };
+
+  const saveToBackend = async () => {
+    try {
+      const bytes = await generateFinalPdfBytes();
+      if (!bytes) return;
+      
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const dataUrl = reader.result as string;
+        
+        const token = localStorage.getItem("vexius_token");
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        await fetch(`${apiUrl}/documents/${documentId}/content`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ content: dataUrl })
+        });
+        console.log('Autosaved PDF');
+      };
+      
+      reader.readAsDataURL(blob);
+    } catch (e) {
+      console.error('Failed to autosave PDF', e);
+    }
+  };
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3.0));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
@@ -67,29 +170,20 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
     }
   };
 
-  const handleExtractPage = async () => {
-    if (!pdfUrl) return;
+  const handleDownloadAll = async () => {
     try {
-      const existingPdfBytes = await fetch(pdfUrl).then(res => res.arrayBuffer());
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      
-      // Create a new document with just this page
-      const newPdf = await PDFDocument.create();
-      const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageNumber - 1]);
-      newPdf.addPage(copiedPage);
-      
-      const pdfBytes = await newPdf.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      const bytes = await generateFinalPdfBytes();
+      if (!bytes) return;
+      const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
       const newUrl = URL.createObjectURL(blob);
       
-      // Trigger download for the extracted page
       const a = document.createElement('a');
       a.href = newUrl;
-      a.download = `Extracted_Page_${pageNumber}.pdf`;
+      a.download = `Document_${documentId}.pdf`;
       a.click();
       URL.revokeObjectURL(newUrl);
     } catch (e) {
-      console.error("Failed to extract page", e);
+      console.error("Failed to download document", e);
     }
   };
 
@@ -130,8 +224,9 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
     setNumPages(numPages);
   }
 
-  function onPageRenderSuccess(pageInfo: any) {
-    setPageDimensions({ width: pageInfo.width, height: pageInfo.height });
+  function onPageRenderSuccess(page: any) {
+    const viewport = page.getViewport({ scale: zoomLevel, rotation });
+    setPageDimensions({ width: viewport.width, height: viewport.height });
   }
 
   if (!pdfUrl) {
@@ -139,8 +234,8 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', background: '#f3f4f6' }}>
-      {/* Top Ribbon */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Ribbon Toolbar */}
       <VexiusPdfRibbon 
         navbarElement={navbarElement} 
         zoomLevel={zoomLevel}
@@ -151,7 +246,7 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
         onRotateLeft={handleRotateLeft}
         onRotateRight={handleRotateRight}
         onDeletePage={handleDeletePage}
-        onExtractPage={handleExtractPage}
+        onExtractPage={handleDownloadAll}
         activeTool={activeTool}
         onSelectTool={setActiveTool}
         activeColor={activeColor}
@@ -189,7 +284,13 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
           gap: '16px',
           flexShrink: 0
         }}>
-          <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading="Loading...">
+          <Document 
+            file={pdfUrl} 
+            onLoadSuccess={onDocumentLoadSuccess} 
+            loading={<div style={{ color: '#374151', fontSize: '14px', padding: '10px' }}>Loading...</div>}
+            error={<div style={{ color: '#ef4444', fontSize: '14px', padding: '10px' }}>Failed to load PDF.</div>}
+            noData={<div style={{ color: '#374151', fontSize: '14px', padding: '10px' }}>No PDF found.</div>}
+          >
             {Array.from(new Array(numPages), (el, index) => (
               <div 
                 key={`thumb-${index}`}
@@ -227,7 +328,12 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
 
         {/* Center Canvas */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflow: 'auto', background: '#e5e7eb', padding: '40px' }}>
-          <Document file={pdfUrl} loading="Loading document...">
+          <Document 
+            file={pdfUrl} 
+            loading={<div style={{ color: '#374151', fontSize: '16px', padding: '20px' }}>Loading document...</div>}
+            error={<div style={{ color: '#ef4444', fontSize: '16px', padding: '20px' }}>Failed to load PDF document.</div>}
+            noData={<div style={{ color: '#374151', fontSize: '16px', padding: '20px' }}>No PDF document specified.</div>}
+          >
             <div style={{ 
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
               background: '#fff',
@@ -248,6 +354,8 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
                   height={pageDimensions.height}
                   tool={activeTool}
                   color={activeColor}
+                  initialData={pageAnnotations[pageNumber]?.data}
+                  onChange={handleAnnotationsChange}
                 />
               )}
             </div>

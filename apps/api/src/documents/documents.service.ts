@@ -339,7 +339,14 @@ export class DocumentsService {
     }
 
     try {
-      const fileBuffer = Buffer.from(content, 'utf-8');
+      let fileBuffer: Buffer;
+      if (content.startsWith('data:')) {
+        // e.g. data:application/pdf;base64,JVBERi...
+        const base64Data = content.split(',')[1];
+        fileBuffer = Buffer.from(base64Data, 'base64');
+      } else {
+        fileBuffer = Buffer.from(content, 'utf-8');
+      }
       
       // Store in place (overwrite) or increment version. For autosave, overwriting is better to avoid spamming versions.
       // Let's overwrite the current storage key for autosave, or we can use the same path.

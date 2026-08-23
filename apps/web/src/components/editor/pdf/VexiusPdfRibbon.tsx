@@ -3,7 +3,7 @@ import {
   Menu, Search, BookOpen, Moon, 
   ZoomOut, ZoomIn, Maximize, FileImage,
   Highlighter, Underline, Strikethrough,
-  PenTool, Square, Circle, ArrowUpRight, StickyNote, Signature,
+  Eraser, PenTool, Square, Circle, ArrowUpRight, StickyNote, Signature,
   Palette, RotateCcw, RotateCw, Trash2, Download
 } from 'lucide-react';
 import { PdfTool } from './VexiusPdfEditor';
@@ -139,24 +139,39 @@ export function VexiusPdfRibbon({
           <RibbonButton label="Arrow" isActive={activeTool === 'arrow'} onClick={() => onSelectTool(activeTool === 'arrow' ? 'select' : 'arrow')}><ArrowUpRight size={20} /></RibbonButton>
           <RibbonButton label="Note" isActive={activeTool === 'note'} onClick={() => onSelectTool(activeTool === 'note' ? 'select' : 'note')}><StickyNote size={20} /></RibbonButton>
           <RibbonButton label="Sign" isActive={activeTool === 'sign'} onClick={() => onSelectTool(activeTool === 'sign' ? 'select' : 'sign')}><Signature size={20} /></RibbonButton>
+          <RibbonButton label="Eraser" isActive={activeTool === 'eraser'} onClick={() => onSelectTool(activeTool === 'eraser' ? 'select' : 'eraser')}><Eraser size={20} /></RibbonButton>
           
-          {/* Color Picker Mock */}
+          {/* Color Picker */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{ display: 'flex', gap: '2px', padding: '4px 0' }}>
-              {['#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
+            <div style={{ display: 'flex', gap: '4px', padding: '4px 0', alignItems: 'center' }}>
+              {['#000000', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
                 <div 
                   key={c} 
                   onClick={() => onSelectColor(c)}
                   style={{ 
-                    width: '12px', 
-                    height: '12px', 
+                    width: '14px', 
+                    height: '14px', 
                     borderRadius: '50%', 
                     background: c,
                     cursor: 'pointer',
-                    border: activeColor === c ? '2px solid #000' : 'none'
+                    border: activeColor === c ? '2px solid #6b7280' : '1px solid #d1d5db'
                   }} 
                 />
               ))}
+              <input 
+                type="color" 
+                value={activeColor} 
+                onChange={(e) => onSelectColor(e.target.value)}
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  padding: 0,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent'
+                }}
+                title="Custom Color"
+              />
             </div>
             <span style={{ fontSize: '10px', color: '#6b7280' }}>Color</span>
           </div>
@@ -168,8 +183,8 @@ export function VexiusPdfRibbon({
         <div style={{ display: 'flex', gap: '8px' }}>
           <RibbonButton label="Rotate left" onClick={onRotateLeft}><RotateCcw size={20} /></RibbonButton>
           <RibbonButton label="Rotate right" onClick={onRotateRight}><RotateCw size={20} /></RibbonButton>
-          <RibbonButton label="Delete page" onClick={onDeletePage}><Trash2 size={20} /></RibbonButton>
-          <RibbonButton label="Extract page" onClick={onExtractPage}><Download size={20} /></RibbonButton>
+          <RibbonButton label="Delete Page" onClick={onDeletePage}><Trash2 size={20} /></RibbonButton>
+          <RibbonButton label="Download" onClick={onExtractPage}><Download size={20} /></RibbonButton>
         </div>
 
       </div>

@@ -4,13 +4,16 @@ import * as fabric from 'fabric';
 export interface VexiusPdfCanvasOverlayProps {
   width: number;
   height: number;
-  tool: 'select' | 'draw' | 'rectangle' | 'ellipse' | 'arrow' | 'note' | 'sign' | 'highlight' | 'underline' | 'strikethrough';
+  tool: 'select' | 'draw' | 'rectangle' | 'ellipse' | 'arrow' | 'note' | 'sign' | 'highlight' | 'underline' | 'strikethrough' | 'eraser';
   color: string;
+  initialData?: any;
+  onChange?: (data: any) => void;
 }
 
-export function VexiusPdfCanvasOverlay({ width, height, tool, color }: VexiusPdfCanvasOverlayProps) {
+export function VexiusPdfCanvasOverlay({ width, height, tool, color, initialData, onChange }: VexiusPdfCanvasOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
+  const isLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -22,6 +25,26 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color }: VexiusPdf
       height,
       selection: true,
     });
+    
+    if (initialData) {
+      canvas.loadFromJSON(initialData).then(() => {
+        canvas.renderAll();
+        isLoadedRef.current = true;
+      });
+    } else {
+      isLoadedRef.current = true;
+    }
+    
+    const notifyChange = () => {
+      if (onChange && isLoadedRef.current) {
+        onChange(canvas.toJSON());
+      }
+    };
+
+    canvas.on('object:added', notifyChange);
+    canvas.on('object:modified', notifyChange);
+    canvas.on('object:removed', notifyChange);
+    canvas.on('path:created', notifyChange);
     
     fabricRef.current = canvas;
 
@@ -56,13 +79,49 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color }: VexiusPdf
       canvas.selection = true;
       canvas.defaultCursor = 'default';
     } 
-    else if (tool === 'draw' || tool === 'highlight') {
+    else if (tool === 'eraser') {
+      canvas.defaultCursor = 'crosshair';
+      let isErasing = false;
+      canvas.on('mouse:down', (o: any) => {
+        isErasing = true;
+        if (o.target) {
+          canvas.remove(o.target);
+        }
+      });
+      canvas.on('mouse:move', (o: any) => {
+        if (isErasing && o.target) {
+          canvas.remove(o.target);
+        }
+      });
+      canvas.on('mouse:up', () => {
+        isErasing = false;
+      });
+    }
+    else if (tool === 'draw' || tool === 'highlight' || tool === 'sign') {
       canvas.isDrawingMode = true;
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
       canvas.freeDrawingBrush.color = tool === 'highlight' ? `${color}80` : color;
-      canvas.freeDrawingBrush.width = tool === 'highlight' ? 15 : 2;
+      canvas.freeDrawingBrush.width = tool === 'highlight' ? 15 : tool === 'sign' ? 1 : 2;
     }
-    else if (tool === 'rectangle' || tool === 'ellipse') {
+    else if (tool === 'note') {
+      canvas.defaultCursor = 'text';
+      canvas.on('mouse:down', (o: any) => {
+        if (o.target) return; // Don't create new note if clicking on existing object
+        const pointer = canvas.getScenePoint(o.e);
+        const text = new fabric.IText('Note', {
+          left: pointer.x,
+          top: pointer.y,
+          fill: color,
+          fontSize: 16,
+          fontFamily: 'Arial'
+        });
+        canvas.add(text);
+        canvas.setActiveObject(text);
+        text.enterEditing();
+        text.selectAll();
+      });
+    }
+    else if (['rectangle', 'ellipse', 'underline', 'strikethrough', 'arrow'].includes(tool)) {
       canvas.defaultCursor = 'crosshair';
       let isDown = false;
       let startX = 0;
@@ -97,6 +156,21 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color }: VexiusPdf
             strokeWidth: 2,
             selectable: true,
           });
+        } else if (['underline', 'strikethrough'].includes(tool)) {
+          activeShape = new fabric.Line([startX, startY, startX, startY], {
+            fill: 'transparent',
+            stroke: color,
+            strokeWidth: 2,
+            selectable: true,
+          });
+        } else if (tool === 'arrow') {
+          activeShape = new fabric.Path(`M ${startX} ${startY} L ${startX} ${startY}`, {
+            fill: 'transparent',
+            stroke: color,
+            strokeWidth: 2,
+            selectable: true,
+            objectCaching: false
+          });
         }
         
         if (activeShape) canvas.add(activeShape);
@@ -118,6 +192,22 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color }: VexiusPdf
           ellipse.set({ ry: Math.abs(startY - pointer.y) / 2 });
           ellipse.set({ left: Math.min(pointer.x, startX) });
           ellipse.set({ top: Math.min(pointer.y, startY) });
+        } else if (['underline', 'strikethrough'].includes(tool)) {
+          const line = activeShape as fabric.Line;
+          line.set({ x2: pointer.x, y2: pointer.y });
+        } else if (tool === 'arrow') {
+          const path = activeShape as fabric.Path;
+          const dx = pointer.x - startX;
+          const dy = pointer.y - startY;
+          const angle = Math.atan2(dy, dx);
+          const headlen = 15; 
+          const p1x = pointer.x - headlen * Math.cos(angle - Math.PI / 6);
+          const p1y = pointer.y - headlen * Math.sin(angle - Math.PI / 6);
+          const p2x = pointer.x - headlen * Math.cos(angle + Math.PI / 6);
+          const p2y = pointer.y - headlen * Math.sin(angle + Math.PI / 6);
+          const pathStr = `M ${startX} ${startY} L ${pointer.x} ${pointer.y} M ${pointer.x} ${pointer.y} L ${p1x} ${p1y} M ${pointer.x} ${pointer.y} L ${p2x} ${p2y}`;
+          
+          path.set({ path: new fabric.Path(pathStr).path });
         }
         canvas.renderAll();
       });
