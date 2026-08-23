@@ -352,6 +352,8 @@ export const VexiusPdfEditor = forwardRef<VexiusPdfEditorRef, VexiusPdfEditorPro
               {/* Overlay Canvas for Drawing */}
               {pageDimensions.width > 0 && (
                 <VexiusPdfCanvasOverlay
+                  key={pageNumber}
+                  pageNumber={pageNumber}
                   width={pageDimensions.width}
                   height={pageDimensions.height}
                   tool={activeTool}

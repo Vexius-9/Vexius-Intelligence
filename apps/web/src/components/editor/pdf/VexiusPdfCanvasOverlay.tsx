@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 
 export interface VexiusPdfCanvasOverlayProps {
+  pageNumber?: number;
   width: number;
   height: number;
   tool: 'select' | 'draw' | 'rectangle' | 'ellipse' | 'arrow' | 'note' | 'sign' | 'highlight' | 'underline' | 'strikethrough' | 'eraser';
@@ -10,10 +11,15 @@ export interface VexiusPdfCanvasOverlayProps {
   onChange?: (data: any) => void;
 }
 
-export function VexiusPdfCanvasOverlay({ width, height, tool, color, initialData, onChange }: VexiusPdfCanvasOverlayProps) {
+export function VexiusPdfCanvasOverlay({ pageNumber, width, height, tool, color, initialData, onChange }: VexiusPdfCanvasOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const isLoadedRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -36,8 +42,8 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color, initialData
     }
     
     const notifyChange = () => {
-      if (onChange && isLoadedRef.current) {
-        onChange(canvas.toJSON());
+      if (onChangeRef.current && isLoadedRef.current) {
+        onChangeRef.current(canvas.toJSON());
       }
     };
 
@@ -51,7 +57,25 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color, initialData
     return () => {
       canvas.dispose();
     };
-  }, []);
+  }, []); // Only run once on mount
+
+  // Explicitly handle page changes (even if React key unmounts, this ensures cleanup)
+  useEffect(() => {
+    if (fabricRef.current) {
+      const canvas = fabricRef.current;
+      isLoadedRef.current = false;
+      canvas.clear();
+      
+      if (initialData) {
+        canvas.loadFromJSON(initialData).then(() => {
+          canvas.renderAll();
+          isLoadedRef.current = true;
+        });
+      } else {
+        isLoadedRef.current = true;
+      }
+    }
+  }, [pageNumber]); // Deliberately exclude initialData to avoid infinite loops during drawing
 
   // Update canvas size when dimensions change
   useEffect(() => {
@@ -86,11 +110,13 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color, initialData
         isErasing = true;
         if (o.target) {
           canvas.remove(o.target);
+          canvas.requestRenderAll();
         }
       });
       canvas.on('mouse:move', (o: any) => {
         if (isErasing && o.target) {
           canvas.remove(o.target);
+          canvas.requestRenderAll();
         }
       });
       canvas.on('mouse:up', () => {
@@ -129,6 +155,8 @@ export function VexiusPdfCanvasOverlay({ width, height, tool, color, initialData
       let activeShape: fabric.Object | null = null;
 
       canvas.on('mouse:down', (o: any) => {
+        if (o.target) return; // Prevent drawing new shape when clicking to move an existing object
+        
         isDown = true;
         const pointer = canvas.getScenePoint(o.e);
         startX = pointer.x;
