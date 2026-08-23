@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle, BarChart } from "lucide-react";
 import { useChat } from "ai/react";
 import ReactMarkdown from "react-markdown";
@@ -28,10 +28,13 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [cachedSelection, setCachedSelection] = useState<string>("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setToken(localStorage.getItem("vexius_token") || "");
   }, []);
+
+
   
   // Cache the selection when the mouse enters the sidebar, BEFORE the iframe loses focus on click
   const handleMouseEnter = async () => {
@@ -61,6 +64,12 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       { id: "1", role: "assistant", content: "I am Vexius Intelligence. How can I help you today?" }
     ]
   });
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading, isProcessingAction]);
 
   const handleInlineAction = async (action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'explain_formula' | 'slide_structure' | 'summarize_pdf') => {
     if (!getCurrentSelection || !onApplyAction) {
@@ -363,6 +372,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
