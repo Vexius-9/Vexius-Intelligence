@@ -101,11 +101,11 @@ export class DocumentsService {
         return doc;
       });
 
-      // Trigger background indexing for the newly uploaded document
-      await this.documentIndexingQueue.add('index', {
+      // Trigger background indexing for the newly uploaded document without awaiting to prevent API hangs
+      this.documentIndexingQueue.add('index', {
         documentId: document.id,
         workspaceId,
-      });
+      }).catch(e => this.logger.error('Failed to queue document indexing', e));
 
       return document;
     } catch (error) {
@@ -482,10 +482,10 @@ export class DocumentsService {
         });
 
         // 5. Dispatch index job for AI search
-        await this.documentIndexingQueue.add('index-document', {
+        this.documentIndexingQueue.add('index-document', {
           documentId: document.id,
           workspaceId: document.workspaceId
-        });
+        }).catch(e => this.logger.error('Failed to queue document indexing', e));
 
         this.logger.log(`Document ${documentId} saved successfully from ONLYOFFICE (version ${newVersion})`);
       } catch (error) {
