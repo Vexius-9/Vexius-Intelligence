@@ -392,6 +392,19 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                       <CheckCircle size={14} /> Replace Current Slide
                     </button>
                   )}
+                  {documentContext?.documentType === 'presentation' && (
+                    <button 
+                      onClick={() => {
+                        if (onApplyAction) {
+                          let text = msg.content;
+                          onApplyAction(`<!-- ACTION:SPEAKER_NOTES -->\n${text}`);
+                        }
+                      }}
+                      style={{ padding: '6px 12px', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}
+                    >
+                      <CheckCircle size={14} /> Apply to Notes
+                    </button>
+                  )}
                 </div>
               )}
             </div>

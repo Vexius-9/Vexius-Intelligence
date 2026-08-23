@@ -233,7 +233,7 @@ export class AiService {
     } else if (action === 'speaker_notes') {
       prompt = `You are an expert public speaker. Generate clear and engaging speaker notes for a presentation based on the following slide content. The notes should help the presenter elaborate on the points naturally.\n\nSlide Content: ${text}`;
     } else if (action === 'generate_slide') {
-      prompt = `You are an expert presentation designer. Generate a complete slide (or multiple slides if needed, separated by 'Slide 1:', 'Slide 2:', etc.) in HTML structure based on the following topic or text. Use standard HTML tags like <h1>, <h2>, <ul>, <li>, <p>. If the user specifies any visual style, theme, or design preferences in the text, you MUST apply inline CSS styles (e.g. style="color: blue; text-align: center;") to the elements to match their request. Return only the HTML content, no markdown code blocks.\n\nTopic/Text/Style Request: ${text}`;
+      prompt = `You are an expert presentation designer. Generate a complete slide (or multiple slides if needed) in HTML structure based on the following topic or text. Use standard HTML tags like <h1>, <h2>, <ul>, <li>, <p>. If generating multiple slides, you MUST separate each slide with exactly "---SLIDE_SEPARATOR---" on a new line. Do NOT write "Slide 1:" or "Slide 2:". If the user specifies any visual style, theme, or design preferences in the text, you MUST apply inline CSS styles (e.g. style="color: blue; text-align: center;") to the elements to match their request. Return only the HTML content, no markdown code blocks.\n\nTopic/Text/Style Request: ${text}`;
     } else {
       throw new BadRequestException('Invalid action');
     }
