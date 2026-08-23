@@ -555,12 +555,8 @@ a {
 .vexius-slide-content h1 {
   font-size: 3.5rem;
   font-weight: 800;
-  color: #111827;
+  color: #ea580c;
   margin-bottom: 0.5rem;
-  background: linear-gradient(90deg, #ea580c, #f97316);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
   line-height: 1.2;
 }
 
