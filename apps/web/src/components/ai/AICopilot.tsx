@@ -323,14 +323,24 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                           onApplyAction(msg.content);
                         } else {
                           let text = msg.content.replace(/^\*\*.*?\*\*\n\n/, ''); // Remove title like **Summary**
-                          // Basic markdown to HTML
-                          text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                          text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                          text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-                          text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-                          text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-                          // Handle paragraphs, avoiding empty ones
-                          text = text.split('\n\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+                          
+                          // If it looks like HTML, don't wrap it in <p> tags
+                          const isHtml = /<[a-z][\s\S]*>/i.test(text);
+                          
+                          if (!isHtml) {
+                            // Basic markdown to HTML
+                            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                            text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                            text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+                            text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+                            // Handle paragraphs, avoiding empty ones
+                            text = text.split('\n\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+                          } else {
+                            // Sanitize HTML by removing whitespace between tags
+                            // This prevents ProseMirror/Tiptap from wrapping whitespace text nodes into dummy <td> or <tr> elements
+                            text = text.replace(/>\s+</g, '><');
+                          }
                           onApplyAction(text);
                         }
                       }

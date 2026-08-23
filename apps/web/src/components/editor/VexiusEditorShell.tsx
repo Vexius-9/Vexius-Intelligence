@@ -129,9 +129,8 @@ export function VexiusEditorShell({
 
   const navbarElement = null; // Removing it from Ribbon
 
-
   return (
-    <div style={{
+    <div className="vexius-editor-shell-wrapper" style={{
       display: "flex",
       flexDirection: "column",
       height: "calc(100vh - 64px)",
@@ -152,10 +151,10 @@ export function VexiusEditorShell({
       {breadcrumbPortal}
       
       {/* Editor & Copilot Container */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div className="vexius-editor-copilot-container" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         
         {/* Main Editor Canvas */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", overflowY: "hidden", background: "#f3f4f6" }}>
+        <div className="vexius-editor-main-canvas" style={{ flex: 1, display: "flex", justifyContent: "center", overflowY: "hidden", background: "#f3f4f6" }}>
           {loading ? (
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
               <Loader2 className="animate-spin" />

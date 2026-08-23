@@ -41,12 +41,14 @@
     "@tiptap/pm": "^3.30.2",
     "@tiptap/react": "^3.30.2",
     "@tiptap/starter-kit": "^3.30.2",
+    "@types/turndown": "^5.0.6",
     "ai": "^3.4.33",
     "bs58": "^6.0.0",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^13.1.0",
     "handsontable": "^18.0.0",
+    "html-docx-js": "^0.3.1",
     "hyperformula": "^3.4.0",
     "lucide-react": "^1.31.0",
     "next": "16.3.1",
@@ -57,6 +59,7 @@
     "react-pdf": "^10.5.0",
     "remark-gfm": "^4.0.1",
     "tiptap-pagination-plus": "^3.1.0",
+    "turndown": "^7.2.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

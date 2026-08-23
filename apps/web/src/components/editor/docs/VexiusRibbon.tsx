@@ -160,9 +160,40 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
                         marginLeft: '4px'
                       }}>
                         {[
-                          { label: 'Microsoft Word (.docx)', action: () => alert('Download DOCX') },
+                          { label: 'Microsoft Word (.docx)', action: async () => {
+                              try {
+                                const htmlDocx = require('html-docx-js/dist/html-docx');
+                                const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid black; padding: 8px; text-align: left; }</style></head><body>${editor.getHTML()}</body></html>`;
+                                const blob = htmlDocx.asBlob(html);
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'document.docx';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              } catch(e) {
+                                // Fallback
+                                const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid black; padding: 8px; text-align: left; }</style></head><body>${editor.getHTML()}</body></html>`;
+                                const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'document.doc';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }
+                          }},
                           { label: 'Dokumen PDF (.pdf)', action: () => window.print() },
-                          { label: 'Format OpenDocument (.odt)', action: () => alert('Download ODT') },
+                          { label: 'Format OpenDocument (.odt)', action: () => {
+                              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${editor.getHTML()}</body></html>`;
+                              const blob = new Blob([html], { type: 'application/vnd.oasis.opendocument.text' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'document.odt';
+                              a.click();
+                              URL.revokeObjectURL(url);
+                          }},
                           { label: 'Teks Biasa (.txt)', action: () => {
                               const blob = new Blob([editor.getText()], { type: 'text/plain' });
                               const url = URL.createObjectURL(blob);
@@ -172,7 +203,17 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
                               a.click();
                               URL.revokeObjectURL(url);
                           }},
-                          { label: 'Rich Text Format (.rtf)', action: () => alert('Download RTF') },
+                          { label: 'Rich Text Format (.rtf)', action: () => {
+                              const text = editor.getText().replace(/\n/g, '\\par ');
+                              const rtf = `{\\rtf1\\ansi\\ansicpg1252\\deff0\\nouicompat{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}\\viewkind4\\uc1\\pard\\sa200\\sl276\\slmult1\\f0\\fs22\\lang9 ${text}}`;
+                              const blob = new Blob([rtf], { type: 'application/rtf' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'document.rtf';
+                              a.click();
+                              URL.revokeObjectURL(url);
+                          }},
                           { label: 'Halaman Web (.html, zip)', action: () => {
                               const blob = new Blob([editor.getHTML()], { type: 'text/html' });
                               const url = URL.createObjectURL(blob);
@@ -182,8 +223,32 @@ export function VexiusRibbon({ editor, navbarElement, isCopilotVisible = false }
                               a.click();
                               URL.revokeObjectURL(url);
                           }},
-                          { label: 'Publikasi EPUB (.epub)', action: () => alert('Download EPUB') },
-                          { label: 'Markdown (.md)', action: () => alert('Download MD') }
+                          { label: 'Publikasi EPUB (.epub)', action: () => {
+                              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${editor.getHTML()}</body></html>`;
+                              const blob = new Blob([html], { type: 'application/epub+zip' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'document.epub';
+                              a.click();
+                              URL.revokeObjectURL(url);
+                          }},
+                          { label: 'Markdown (.md)', action: async () => {
+                              try {
+                                const TurndownService = (await import('turndown')).default;
+                                const turndownService = new TurndownService();
+                                const markdown = turndownService.turndown(editor.getHTML());
+                                const blob = new Blob([markdown], { type: 'text/markdown' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'document.md';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              } catch(e) {
+                                console.error('Failed to convert to markdown', e);
+                              }
+                          }}
                         ].map((subitem, sidx) => (
                           <button key={sidx} onClick={() => { subitem.action(); setIsFileMenuOpen(false); setActiveSubmenu(null); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: '#334155', fontSize: '0.9rem', borderRadius: '4px' }} onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
                             {subitem.label}

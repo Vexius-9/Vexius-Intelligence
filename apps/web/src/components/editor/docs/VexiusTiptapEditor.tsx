@@ -135,51 +135,53 @@ export const VexiusTiptapEditor = forwardRef<VexiusTiptapEditorRef, VexiusTiptap
   const editorRef = useRef<Editor | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
 
+  const editorExtensions = React.useMemo(() => [
+    StarterKit.configure({
+      bulletList: false,
+      orderedList: false,
+      link: { openOnClick: false },
+    }),
+    CustomBulletList,
+    CustomOrderedList,
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    TextStyle,
+    Color,
+    FontFamily,
+    Highlight.configure({ multicolor: true }),
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    Subscript,
+    Superscript,
+    Image,
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    FontSize,
+    LineHeight,
+    Indent,
+    Youtube.configure({ controls: false }),
+    CharacterCount,
+    PaginationPlus.configure({
+      pageHeight: 1123, // A4 height at 96 DPI
+      pageWidth: 794,   // A4 width at 96 DPI
+      pageGap: 40,
+      marginTop: 96,
+      marginBottom: 96,
+      marginLeft: 96,
+      marginRight: 96,
+      footerRight: '',
+      footerLeft: '',
+      headerRight: '',
+      headerLeft: '',
+    })
+  ], []);
+
   useEffect(() => {
     let instance: Editor | null = null;
     try {
       instance = new Editor({
-        extensions: [
-          StarterKit.configure({
-            bulletList: false,
-            orderedList: false,
-            link: { openOnClick: false },
-          }),
-          CustomBulletList,
-          CustomOrderedList,
-          TextAlign.configure({ types: ['heading', 'paragraph'] }),
-          TextStyle,
-          Color,
-          FontFamily,
-          Highlight.configure({ multicolor: true }),
-          Table.configure({ resizable: true }),
-          TableRow,
-          TableHeader,
-          TableCell,
-          Subscript,
-          Superscript,
-          Image,
-          TaskList,
-          TaskItem.configure({ nested: true }),
-          FontSize,
-          LineHeight,
-          Indent,
-          Youtube.configure({ controls: false }),
-          CharacterCount,
-          PaginationPlus.configure({
-            pageHeight: 1123, // A4 height at 96 DPI
-            pageWidth: 794,   // A4 width at 96 DPI
-            pageGap: 40,
-            marginTop: 96,
-            marginBottom: 96,
-            marginLeft: 96,
-            marginRight: 96,
-            footerRight: '',
-            footerLeft: '',
-            headerRight: '',
-            headerLeft: '',
-          }),
-        ],
+        extensions: editorExtensions,
         content: sanitizeContent(initialContent) || '',
         onUpdate: ({ editor: e }) => {
           if (onUpdateRef.current) onUpdateRef.current(JSON.stringify(e.getJSON()));
