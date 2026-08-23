@@ -6,12 +6,41 @@ import {
   PenTool, Square, Circle, ArrowUpRight, StickyNote, Signature,
   Palette, RotateCcw, RotateCw, Trash2, Download
 } from 'lucide-react';
+import { PdfTool } from './VexiusPdfEditor';
 
 export interface VexiusPdfRibbonProps {
   navbarElement?: React.ReactNode;
+  zoomLevel: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onFitWidth: () => void;
+  onFitPage: () => void;
+  onRotateLeft: () => void;
+  onRotateRight: () => void;
+  onDeletePage: () => void;
+  onExtractPage: () => void;
+  activeTool: PdfTool;
+  onSelectTool: (tool: PdfTool) => void;
+  activeColor: string;
+  onSelectColor: (color: string) => void;
 }
 
-export function VexiusPdfRibbon({ navbarElement }: VexiusPdfRibbonProps) {
+export function VexiusPdfRibbon({ 
+  navbarElement,
+  zoomLevel,
+  onZoomIn,
+  onZoomOut,
+  onFitWidth,
+  onFitPage,
+  onRotateLeft,
+  onRotateRight,
+  onDeletePage,
+  onExtractPage,
+  activeTool,
+  onSelectTool,
+  activeColor,
+  onSelectColor
+}: VexiusPdfRibbonProps) {
 
   const RibbonButton = ({ onClick, isActive, children, label, activeColor = '#fee2e2' }: { onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, isActive?: boolean, children: React.ReactNode, label: string, activeColor?: string }) => (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
@@ -80,14 +109,14 @@ export function VexiusPdfRibbon({ navbarElement }: VexiusPdfRibbonProps) {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}><ZoomOut size={16} color="#6b7280" /></button>
-            <span style={{ fontSize: '12px', width: '36px', textAlign: 'center' }}>175%</span>
-            <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}><ZoomIn size={16} color="#6b7280" /></button>
+            <button onClick={onZoomOut} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}><ZoomOut size={16} color="#6b7280" /></button>
+            <span style={{ fontSize: '12px', width: '36px', textAlign: 'center' }}>{Math.round(zoomLevel * 100)}%</span>
+            <button onClick={onZoomIn} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px' }}><ZoomIn size={16} color="#6b7280" /></button>
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>
-            <RibbonButton label="Fit width"><Maximize size={18} /></RibbonButton>
-            <RibbonButton label="Fit page"><FileImage size={18} /></RibbonButton>
+            <RibbonButton label="Fit width" onClick={onFitWidth}><Maximize size={18} /></RibbonButton>
+            <RibbonButton label="Fit page" onClick={onFitPage}><FileImage size={18} /></RibbonButton>
           </div>
         </div>
 
@@ -95,27 +124,38 @@ export function VexiusPdfRibbon({ navbarElement }: VexiusPdfRibbonProps) {
 
         {/* Highlight & Markup */}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <RibbonButton label="Highlight"><Highlighter size={20} /></RibbonButton>
-          <RibbonButton label="Underline"><Underline size={20} /></RibbonButton>
-          <RibbonButton label="Strikethrough"><Strikethrough size={20} /></RibbonButton>
+          <RibbonButton label="Highlight" isActive={activeTool === 'highlight'} onClick={() => onSelectTool(activeTool === 'highlight' ? 'select' : 'highlight')}><Highlighter size={20} /></RibbonButton>
+          <RibbonButton label="Underline" isActive={activeTool === 'underline'} onClick={() => onSelectTool(activeTool === 'underline' ? 'select' : 'underline')}><Underline size={20} /></RibbonButton>
+          <RibbonButton label="Strikethrough" isActive={activeTool === 'strikethrough'} onClick={() => onSelectTool(activeTool === 'strikethrough' ? 'select' : 'strikethrough')}><Strikethrough size={20} /></RibbonButton>
         </div>
 
         <Divider />
 
         {/* Drawing & Annotation */}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <RibbonButton label="Draw"><PenTool size={20} /></RibbonButton>
-          <RibbonButton label="Rectangle"><Square size={20} /></RibbonButton>
-          <RibbonButton label="Ellipse"><Circle size={20} /></RibbonButton>
-          <RibbonButton label="Arrow"><ArrowUpRight size={20} /></RibbonButton>
-          <RibbonButton label="Note"><StickyNote size={20} /></RibbonButton>
-          <RibbonButton label="Sign"><Signature size={20} /></RibbonButton>
+          <RibbonButton label="Draw" isActive={activeTool === 'draw'} onClick={() => onSelectTool(activeTool === 'draw' ? 'select' : 'draw')}><PenTool size={20} /></RibbonButton>
+          <RibbonButton label="Rectangle" isActive={activeTool === 'rectangle'} onClick={() => onSelectTool(activeTool === 'rectangle' ? 'select' : 'rectangle')}><Square size={20} /></RibbonButton>
+          <RibbonButton label="Ellipse" isActive={activeTool === 'ellipse'} onClick={() => onSelectTool(activeTool === 'ellipse' ? 'select' : 'ellipse')}><Circle size={20} /></RibbonButton>
+          <RibbonButton label="Arrow" isActive={activeTool === 'arrow'} onClick={() => onSelectTool(activeTool === 'arrow' ? 'select' : 'arrow')}><ArrowUpRight size={20} /></RibbonButton>
+          <RibbonButton label="Note" isActive={activeTool === 'note'} onClick={() => onSelectTool(activeTool === 'note' ? 'select' : 'note')}><StickyNote size={20} /></RibbonButton>
+          <RibbonButton label="Sign" isActive={activeTool === 'sign'} onClick={() => onSelectTool(activeTool === 'sign' ? 'select' : 'sign')}><Signature size={20} /></RibbonButton>
           
           {/* Color Picker Mock */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
             <div style={{ display: 'flex', gap: '2px', padding: '4px 0' }}>
               {['#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
-                <div key={c} style={{ width: '12px', height: '12px', borderRadius: '50%', background: c }} />
+                <div 
+                  key={c} 
+                  onClick={() => onSelectColor(c)}
+                  style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '50%', 
+                    background: c,
+                    cursor: 'pointer',
+                    border: activeColor === c ? '2px solid #000' : 'none'
+                  }} 
+                />
               ))}
             </div>
             <span style={{ fontSize: '10px', color: '#6b7280' }}>Color</span>
@@ -126,10 +166,10 @@ export function VexiusPdfRibbon({ navbarElement }: VexiusPdfRibbonProps) {
 
         {/* Page Actions */}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <RibbonButton label="Rotate left"><RotateCcw size={20} /></RibbonButton>
-          <RibbonButton label="Rotate right"><RotateCw size={20} /></RibbonButton>
-          <RibbonButton label="Delete page"><Trash2 size={20} /></RibbonButton>
-          <RibbonButton label="Extract page"><Download size={20} /></RibbonButton>
+          <RibbonButton label="Rotate left" onClick={onRotateLeft}><RotateCcw size={20} /></RibbonButton>
+          <RibbonButton label="Rotate right" onClick={onRotateRight}><RotateCw size={20} /></RibbonButton>
+          <RibbonButton label="Delete page" onClick={onDeletePage}><Trash2 size={20} /></RibbonButton>
+          <RibbonButton label="Extract page" onClick={onExtractPage}><Download size={20} /></RibbonButton>
         </div>
 
       </div>

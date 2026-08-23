@@ -381,7 +381,7 @@ export class DocumentsService {
 
     const baseUrl = this.configService.get<string>('API_BASE_URL') || 'http://localhost:3000';
     const callbackUrl = `${baseUrl}/documents/${document.id}/callback`;
-    const documentType = (document.type === 'document' || document.type === 'pdf') ? 'word' : document.type === 'spreadsheet' ? 'cell' : 'slide';
+    const documentType = document.type === 'document' ? 'word' : document.type === 'spreadsheet' ? 'cell' : 'slide';
     
     // Extracted document extension for fileType (e.g. 'docx' from filename)
     const extMatch = document.name.match(/\.([^.]+)$/);
@@ -408,12 +408,7 @@ export class DocumentsService {
         customization: {
           forcesave: true,
           comments: true,
-          plugins: true,
-          logo: {
-            image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-            imageDark: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-            url: baseUrl
-          }
+          plugins: true
         }
       },
       permissions: {
