@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { VexiusSlideRibbon } from './VexiusSlideRibbon';
 import { Paperclip, CornerDownLeft, Trash2 } from 'lucide-react';
 
@@ -22,12 +22,19 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
   const [hoveredSlideIndex, setHoveredSlideIndex] = useState<number | null>(null);
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
+  const [isPresenting, setIsPresenting] = useState(false);
+  const [isUsingPresenterView, setIsUsingPresenterView] = useState(true);
+  const [presenterScale, setPresenterScale] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(83);
+  const [slideUpdateKey, setSlideUpdateKey] = useState(0);
   
   const [isPanning, setIsPanning] = useState(false);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef<HTMLDivElement>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const currentSlideHtml = useMemo(() => slides[currentSlideIndex], [currentSlideIndex, slideUpdateKey]);
+  const currentNotesHtml = useMemo(() => notes[currentSlideIndex] || '', [currentSlideIndex, slideUpdateKey]);
 
   const deleteSlide = (indexToDelete: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,9 +59,157 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
 
   useEffect(() => {
     const handleToggleAI = () => setIsCopilotVisible(prev => !prev);
+    const handleStartSlideshow = (e: any) => {
+      const { fromBeginning, usePresenterView } = e.detail || { fromBeginning: false, usePresenterView: true };
+      if (fromBeginning) {
+        setCurrentSlideIndex(0);
+      }
+      setIsUsingPresenterView(usePresenterView);
+      setIsPresenting(true);
+      
+      // Calculate initial scale
+      const calculateScale = () => {
+        const availableWidth = usePresenterView ? window.innerWidth - 480 : window.innerWidth;
+        const availableHeight = usePresenterView ? window.innerHeight - 80 : window.innerHeight;
+        setPresenterScale(Math.min(availableWidth / 960, availableHeight / 540));
+      };
+      
+      calculateScale();
+      window.addEventListener('resize', calculateScale);
+      
+      // We attach the cleanup to a one-off listener when presentation exits
+      // But actually, we can just let a global resize listener handle it if isPresenting is true
+    };
+    
+    const handleDownloadHtml = () => {
+      // Use state variable 'slides' which is in the component scope
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Vexius Presentation</title>
+  <style>
+    body { background: #f1f5f9; display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px; font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; }
+    .slide { width: 960px; height: 540px; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 48px; box-sizing: border-box; position: relative; overflow: hidden; font-size: 1.5rem; color: #1f2937; }
+    
+    .vexius-slide-content { display: flex; flex-direction: column; justify-content: center; height: 100%; }
+    .vexius-slide-content h1 { font-size: 3.5rem; font-weight: 800; color: #ea580c; margin-bottom: 0.5rem; line-height: 1.2; margin-top: 0; }
+    .vexius-slide-content h2 { font-size: 2rem; font-weight: 600; color: #4b5563; margin-bottom: 1.5rem; border-bottom: 3px solid #ea580c; padding-bottom: 0.5rem; display: inline-block; margin-top: 0; }
+    .vexius-slide-content p { font-size: 1.5rem; line-height: 1.6; color: #374151; margin-bottom: 1.5rem; margin-top: 0; }
+    .vexius-slide-content ul, .vexius-slide-content ol { font-size: 1.5rem; line-height: 1.8; color: #374151; margin-bottom: 1.5rem; padding-left: 2rem; margin-top: 0; }
+    .vexius-slide-content li { margin-bottom: 0.5rem; }
+    .vexius-slide-content li::marker { color: #ea580c; }
+  </style>
+</head>
+<body>
+  ${slides.map(slide => `<div class="slide"><div class="vexius-slide-content">${slide}</div></div>`).join('\n  ')}
+</body>
+</html>`;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'presentation.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    
+    const captureSlidesAsImages = async (): Promise<string[]> => {
+      const { default: html2canvas } = await import('html2canvas');
+      const images: string[] = [];
+      
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      document.body.appendChild(container);
+      
+      for (const slideHtml of slides) {
+        const slideEl = document.createElement('div');
+        slideEl.style.width = '960px';
+        slideEl.style.height = '540px';
+        slideEl.style.background = '#fff';
+        slideEl.style.padding = '48px';
+        slideEl.style.boxSizing = 'border-box';
+        slideEl.style.fontSize = '1.5rem';
+        slideEl.style.color = '#000';
+        slideEl.className = 'vexius-slide-content'; // To apply any global slide css
+        slideEl.innerHTML = slideHtml;
+        container.appendChild(slideEl);
+        
+        // Wait a tiny bit for the DOM to settle
+        await new Promise(r => setTimeout(r, 50));
+        
+        const canvas = await html2canvas(slideEl, { scale: 2 }); // scale: 2 for better quality
+        images.push(canvas.toDataURL('image/png'));
+        
+        container.innerHTML = '';
+      }
+      
+      document.body.removeChild(container);
+      return images;
+    };
+    
+    const handleDownloadPdf = async () => {
+      try {
+        const { default: jsPDF } = await import('jspdf');
+        const images = await captureSlidesAsImages();
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [960, 540] });
+        
+        images.forEach((img, i) => {
+          if (i > 0) pdf.addPage([960, 540], 'landscape');
+          pdf.addImage(img, 'PNG', 0, 0, 960, 540);
+        });
+        
+        pdf.save('presentation.pdf');
+      } catch (e) {
+        console.error('Failed to generate PDF:', e);
+      }
+    };
+
+    const handleDownloadPptx = async () => {
+      try {
+        const { default: PptxGenJS } = await import('pptxgenjs');
+        const images = await captureSlidesAsImages();
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
+        
+        images.forEach((img) => {
+          const slide = pptx.addSlide();
+          slide.addImage({ data: img, x: 0, y: 0, w: '100%', h: '100%' });
+        });
+        
+        pptx.writeFile({ fileName: 'presentation.pptx' });
+      } catch (e) {
+        console.error('Failed to generate PPTX:', e);
+      }
+    };
+
     window.addEventListener('vexius:toggle-ai', handleToggleAI as EventListener);
-    return () => window.removeEventListener('vexius:toggle-ai', handleToggleAI as EventListener);
-  }, []);
+    window.addEventListener('vexius:start-slideshow', handleStartSlideshow as EventListener);
+    window.addEventListener('vexius:download-html', handleDownloadHtml as EventListener);
+    window.addEventListener('vexius:download-pdf', handleDownloadPdf as EventListener);
+    window.addEventListener('vexius:download-pptx', handleDownloadPptx as EventListener);
+    
+    return () => {
+      window.removeEventListener('vexius:toggle-ai', handleToggleAI as EventListener);
+      window.removeEventListener('vexius:start-slideshow', handleStartSlideshow as EventListener);
+      window.removeEventListener('vexius:download-html', handleDownloadHtml as EventListener);
+      window.removeEventListener('vexius:download-pdf', handleDownloadPdf as EventListener);
+      window.removeEventListener('vexius:download-pptx', handleDownloadPptx as EventListener);
+      window.removeEventListener('resize', () => {}); // cleanup dummy
+    };
+  }, [slides, notes]);
+
+  useEffect(() => {
+    const handleForceSave = () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+      // Immediately save the current state
+      saveContent(slides, notes);
+    };
+    window.addEventListener('vexius:force-save', handleForceSave);
+    return () => window.removeEventListener('vexius:force-save', handleForceSave);
+  }, [slides, notes]);
 
   useEffect(() => {
     if (initialContent) {
@@ -66,9 +221,11 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSlides(parsed);
           setNotes(new Array(parsed.length).fill(''));
+          setSlideUpdateKey(k => k + 1);
         } else if (parsed && Array.isArray(parsed.slides)) {
           setSlides(parsed.slides);
           setNotes(parsed.notes || new Array(parsed.slides.length).fill(''));
+          setSlideUpdateKey(k => k + 1);
         }
       } catch (e) {
         console.error("Failed to parse initial slides", e);
@@ -115,6 +272,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
       if (isNotes) {
         newNotes[currentSlideIndex] = parseMarkdownToHtml(cleanText);
         setNotes(newNotes);
+        setSlideUpdateKey(k => k + 1);
         saveContent(slides, newNotes);
         return;
       }
@@ -162,6 +320,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
       
       setSlides(newSlides);
       setNotes(newNotes);
+      setSlideUpdateKey(k => k + 1);
       saveContent(newSlides, newNotes);
     }
   }));
@@ -242,6 +401,23 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
   const handleWrapperMouseUpOrLeave = () => {
     setIsPanning(false);
   };
+
+  useEffect(() => {
+    if (!isPresenting) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        setCurrentSlideIndex(prev => Math.min(prev + 1, slides.length - 1));
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        setCurrentSlideIndex(prev => Math.max(prev - 1, 0));
+      } else if (e.key === 'Escape') {
+        setIsPresenting(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPresenting, slides.length]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', background: '#f3f4f6' }}>
@@ -361,7 +537,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
               contentEditable
               onInput={handleInput}
               suppressContentEditableWarning
-              dangerouslySetInnerHTML={{ __html: slides[currentSlideIndex] }}
+              dangerouslySetInnerHTML={{ __html: currentSlideHtml }}
               style={{ 
                 flex: 1,
                 padding: '48px',
@@ -396,7 +572,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
                 contentEditable
                 onInput={handleNotesInput}
                 suppressContentEditableWarning
-                dangerouslySetInnerHTML={{ __html: notes[currentSlideIndex] || '' }}
+                dangerouslySetInnerHTML={{ __html: currentNotesHtml }}
                 data-placeholder="Click to add notes..."
                 style={{
                   flex: 1,
@@ -477,6 +653,72 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
           <span style={{ width: '32px', textAlign: 'right' }}>{zoomLevel}%</span>
         </div>
       </div>
+
+      {/* Presenter View Overlay */}
+      {isPresenting && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: isUsingPresenterView ? '#0f172a' : '#000',
+          zIndex: 99999,
+          display: 'flex',
+          flexDirection: 'row'
+        }}>
+          {/* Main Slide Area */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+             <div 
+               className="vexius-slide-container" 
+               style={{ 
+                 width: '960px',
+                 height: '540px',
+                 background: '#fff',
+                 display: 'flex',
+                 transform: `scale(${presenterScale})`,
+                 transformOrigin: 'center center'
+               }}
+             >
+                <div 
+                  className="vexius-slide-content"
+                  dangerouslySetInnerHTML={{ __html: slides[currentSlideIndex] }}
+                  style={{ flex: 1, padding: '48px', fontSize: '1.5rem', color: '#000', overflow: 'hidden' }}
+                />
+             </div>
+             
+             {/* Navigation controls */}
+             {isUsingPresenterView && (
+               <div style={{ position: 'absolute', bottom: '32px', display: 'flex', gap: '24px', background: 'rgba(0,0,0,0.6)', padding: '12px 24px', borderRadius: '30px', backdropFilter: 'blur(10px)' }}>
+                  <button onClick={() => setCurrentSlideIndex(prev => Math.max(prev - 1, 0))} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center' }}>&larr;</button>
+                  <span style={{ color: 'white', lineHeight: '24px', fontSize: '14px', fontWeight: 500, fontFamily: 'monospace' }}>
+                    {currentSlideIndex + 1} / {slides.length}
+                  </span>
+                  <button onClick={() => setCurrentSlideIndex(prev => Math.min(prev + 1, slides.length - 1))} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center' }}>&rarr;</button>
+               </div>
+             )}
+          </div>
+          
+          {/* Presenter Notes Panel */}
+          {isUsingPresenterView && (
+            <div style={{ width: '400px', background: '#1e293b', borderLeft: '1px solid #334155', color: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '20px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#94a3b8', letterSpacing: '1px' }}>PRESENTER VIEW</h3>
+                <button onClick={() => setIsPresenting(false)} style={{ background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>EXIT</button>
+              </div>
+              
+              <div style={{ padding: '24px', overflowY: 'auto', flex: 1, fontSize: '16px', lineHeight: 1.6 }}>
+                {notes[currentSlideIndex] && notes[currentSlideIndex].trim() !== '' ? (
+                  <div dangerouslySetInnerHTML={{ __html: notes[currentSlideIndex] }} />
+                ) : (
+                  <div style={{ color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>No speaker notes for this slide.</div>
+                )}
+              </div>
+              
+              <div style={{ padding: '16px', borderTop: '1px solid #334155', fontSize: '12px', color: '#64748b', textAlign: 'center' }}>
+                Use <kbd style={{ background: '#334155', padding: '2px 6px', borderRadius: '4px' }}>Space</kbd> or arrows to navigate
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 });

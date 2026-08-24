@@ -428,7 +428,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         
         {/* Quick Actions for Presentation */}
         {documentContext?.documentType === 'presentation' && (
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', paddingBottom: '4px' }}>
             <button 
               onClick={() => handleInlineAction('generate_slide')}
               disabled={isLoading || isProcessingAction}
@@ -464,7 +464,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
 
         {/* Quick Actions for PDF */}
         {documentContext?.documentType === 'pdf' && (
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', paddingBottom: '4px' }}>
             <button 
               onClick={() => handleInlineAction('summarize_pdf')}
               disabled={isLoading || isProcessingAction}

@@ -34,6 +34,7 @@ export function VexiusEditorShell({
   onAiEnd
 }: VexiusEditorShellProps) {
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isRenamingLoading, setIsRenamingLoading] = useState(false);
   const [editName, setEditName] = useState(documentName);
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -57,12 +58,19 @@ export function VexiusEditorShell({
   }, []);
 
   const handleRenameSubmit = async () => {
-    setIsRenaming(false);
     if (!editName.trim() || editName === documentName) {
+      setIsRenaming(false);
       setEditName(documentName || "Untitled Document");
       return;
     }
-    await onRename(editName);
+    
+    setIsRenamingLoading(true);
+    try {
+      await onRename(editName);
+    } finally {
+      setIsRenamingLoading(false);
+      setIsRenaming(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -82,8 +90,8 @@ export function VexiusEditorShell({
   const breadcrumbPortal = portalTarget && !isFullscreen ? createPortal(
     <>
       <ChevronRight size={14} />
-      <div style={{ display: "flex", alignItems: "center" }}>
-        {isRenaming ? (
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {isRenaming && !isRenamingLoading ? (
           <input 
             autoFocus
             value={editName}
@@ -104,22 +112,26 @@ export function VexiusEditorShell({
           />
         ) : (
           <span 
-            onClick={() => setIsRenaming(true)}
+            onClick={() => !isRenamingLoading && setIsRenaming(true)}
             style={{ 
               fontWeight: 500, 
               fontSize: "0.85rem", 
-              cursor: "pointer",
+              cursor: isRenamingLoading ? "not-allowed" : "pointer",
               padding: "2px 8px",
               marginLeft: "-8px",
               borderRadius: "4px",
               transition: "background 0.2s",
-              color: "#fff"
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
             }}
-            onMouseOver={(e) => e.currentTarget.style.background = "var(--bg-secondary)"}
-            onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
+            onMouseOver={(e) => { if (!isRenamingLoading) e.currentTarget.style.background = "var(--bg-secondary)" }}
+            onMouseOut={(e) => { if (!isRenamingLoading) e.currentTarget.style.background = "transparent" }}
             title="Click to rename"
           >
-            {documentName || "Untitled Document"}
+            {isRenamingLoading && <Loader2 size={12} className="animate-spin" />}
+            {isRenamingLoading ? editName : (documentName || "Untitled Document")}
           </span>
         )}
       </div>

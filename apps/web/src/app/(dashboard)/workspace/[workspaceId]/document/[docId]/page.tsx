@@ -34,7 +34,7 @@ export default function DocumentPage({ params }: { params: Promise<{ workspaceId
           setDocMetadata(data);
           
           // Fetch JSON content for documents and spreadsheets (which we autosave as JSON string)
-          if (data.type === 'document' || data.type === 'docx' || data.type === 'spreadsheet' || data.type === 'xlsx') {
+          if (data.type === 'document' || data.type === 'docx' || data.type === 'spreadsheet' || data.type === 'xlsx' || data.type === 'presentation' || data.type === 'pptx') {
             const contentRes = await fetch(`${apiUrl}/documents/${unwrappedParams.docId}/json`, {
               headers: { "Authorization": `Bearer ${token}` }
             });
