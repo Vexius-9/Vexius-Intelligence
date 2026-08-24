@@ -83,6 +83,10 @@ export class AiService {
       prompt += `5. SPREADSHEET MODE: When asked to generate templates (like financial plans, schedules, tables, etc.), you MUST format your response as a standard Markdown table (e.g., | Col1 | Col2 |\\n|---|---|\\n| Val1 | Val2 |). Do not use JSON or other formats for templates.\n`;
     }
 
+    if (context?.documentType === 'presentation' || context?.documentType === 'pptx') {
+      prompt += `5. PRESENTATION MODE: When generating HTML templates for slides, ALWAYS use 'height: 100%;' instead of 'height: 100vh;' for the main container. NEVER use 'min-height' that exceeds 500px (the canvas is 540px tall). Ensure your layout fits perfectly inside a 16:9 ratio without causing scrollbars.\n`;
+    }
+
     return prompt;
   }
 

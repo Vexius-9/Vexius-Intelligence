@@ -489,7 +489,7 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
                 <div 
                   className="vexius-slide-content"
                   dangerouslySetInnerHTML={{ __html: s }} 
-                  style={{ transform: 'scale(0.15)', transformOrigin: 'top left', width: '666%', height: '666%', padding: '20px', color: '#000' }} 
+                  style={{ transform: 'scale(0.15)', transformOrigin: 'top left', width: '666%', height: '666%', padding: '0', color: '#000', overflow: 'hidden' }} 
                 />
               </div>
             </div>
@@ -540,10 +540,10 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
               dangerouslySetInnerHTML={{ __html: currentSlideHtml }}
               style={{ 
                 flex: 1,
-                padding: '48px',
+                padding: '0',
                 outline: 'none',
                 fontSize: '1.5rem',
-                overflow: 'auto',
+                overflow: 'hidden',
                 color: '#000'
               }}
             />
