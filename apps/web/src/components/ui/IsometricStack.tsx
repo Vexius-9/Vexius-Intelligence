@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 
 export function IsometricStack() {
   const layers = [
-    { id: 0, leftText: 'CORE', rightText: 'ONLYOFFICE ENGINE', isTop: false },
+    { id: 0, leftText: 'CORE', rightText: 'VEXIUS ENGINE', isTop: false },
     { id: 1, leftText: 'WORKSPACE', rightText: 'ISOLATED ENVIRONMENTS', isTop: false },
-    { id: 2, leftText: 'ROUTING', rightText: 'DUAL-LLM ENGINE', isTop: false },
+    { id: 2, leftText: 'EDITORS', rightText: 'DOCS, SHEETS, SLIDES, PDF', isTop: false },
     { id: 3, leftText: 'INTELLIGENCE', rightText: 'DEEP REASONING AGENTS', isTop: false },
-    { id: 4, leftText: 'VEXIUS', rightText: 'REAL-TIME COLLABORATION', isTop: true },
+    { id: 4, leftText: 'VEXIUS', rightText: 'INTELLIGENCE SUITE', isTop: true },
   ];
 
   return (

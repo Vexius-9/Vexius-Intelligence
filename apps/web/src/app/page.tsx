@@ -1,13 +1,42 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
-import { ChevronRight, Database, Lock, Globe, Cpu, ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight, Database, Lock, Globe, Cpu, ArrowRight, Coins } from "lucide-react";
 import Image from "next/image";
 import { IsometricStack } from "@/components/ui/IsometricStack";
 import Link from "next/link";
 
 export default function Home() {
+  const [activeEditorTab, setActiveEditorTab] = useState(0);
+
+  const editorsData = [
+    { 
+      name: "Vexius Docs", 
+      img: "/img/docs.png", 
+      desc: "Collaborative word processing with real-time AI assistance.",
+      features: ["Live Multiplayer Editing", "AI Drafting & Summarization", "Markdown Support"]
+    },
+    { 
+      name: "Vexius Sheets", 
+      img: "/img/sheet.png", 
+      desc: "Powerful spreadsheets with AI-driven formulas and data analysis.",
+      features: ["AI Formula Generation", "Data Validation", "Large Dataset Support"]
+    },
+    { 
+      name: "Vexius Slides", 
+      img: "/img/slides.png", 
+      desc: "Dynamic presentations generated instantly from prompts.",
+      features: ["Prompt to Presentation", "Web3 Themes", "PDF Export"]
+    },
+    { 
+      name: "Vexius PDF", 
+      img: "/img/pdf.png", 
+      desc: "Secure PDF viewing, annotation, and cryptographic signatures.",
+      features: ["Digital Signatures", "Annotations", "High Fidelity Rendering"]
+    }
+  ];
+
   return (
     <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
       {/* Navigation */}
@@ -25,6 +54,11 @@ export default function Home() {
             <Link href="#features" className="hover-link">Features</Link>
             <Link href="#security" className="hover-link">Security</Link>
             <Link href="#enterprise" className="hover-link">Enterprise</Link>
+            <Link href="https://x.com/vexiusint" target="_blank" rel="noopener noreferrer" className="hover-link" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </Link>
           </div>
 
           <Link href="/login" className="btn-secondary" style={{ padding: "8px 16px", fontSize: "0.85rem", display: "inline-block", textAlign: "center" }}>
@@ -123,28 +157,37 @@ export default function Home() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               style={{ flex: "1 1 400px", textAlign: "left" }}
             >
-              <div
-                style={{
-                  display: "inline-block",
-                  padding: "4px 12px",
-                  borderRadius: "100px",
-                  border: "1px solid var(--border-color)",
-                  background: "rgba(255,255,255,0.02)",
-                  fontSize: "0.85rem",
-                  color: "var(--text-secondary)",
-                  marginBottom: "32px",
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                Introducing Vexius Engine 2.0
+              <div className="hero-content" style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
+                <div
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 12px",
+                    borderRadius: "100px",
+                    border: "1px solid var(--border-color)",
+                    background: "rgba(255,255,255,0.02)",
+                    fontSize: "0.85rem",
+                    color: "var(--text-secondary)",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Introducing Vexius Engine 2.0
+                </div>
+
+                {process.env.NEXT_PUBLIC_VEXIUS_CA && (
+                  <a href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_VEXIUS_CA}`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(168, 85, 247, 0.1)", border: "1px solid rgba(168, 85, 247, 0.2)", padding: "4px 12px", borderRadius: "100px", color: "#a855f7", textDecoration: "none", fontSize: "0.85rem", fontWeight: 500, transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.4)"; }} onMouseOut={(e) => { e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.2)"; }}>
+                    <Coins size={14} />
+                    CA: {process.env.NEXT_PUBLIC_VEXIUS_CA}
+                  </a>
+                )}
               </div>
               
-              <h1 className="heading-hero" style={{ marginBottom: "24px", textAlign: "left" }}>
+              <h1 className="heading-hero hero-text-container" style={{ marginBottom: "24px" }}>
                 Document collaboration, <br />
                 engineered for speed.
               </h1>
               
               <p
+                className="hero-text-container"
                 style={{
                   fontSize: "1.1rem",
                   color: "var(--text-secondary)",
@@ -152,12 +195,13 @@ export default function Home() {
                   marginBottom: "48px",
                   maxWidth: "500px",
                   letterSpacing: "-0.01em",
+                  margin: "0 auto 48px auto",
                 }}
               >
                 Vexius brings deep reasoning directly into your workspace. No context switching, just seamless AI integration.
               </p>
               
-              <div style={{ display: "flex", gap: "16px", justifyContent: "flex-start" }}>
+              <div className="hero-buttons" style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                 <Link href="/login" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                   Start Building
                   <ChevronRight size={16} />
@@ -166,6 +210,8 @@ export default function Home() {
                   Documentation
                 </Link>
               </div>
+
+
             </motion.div>
 
             {/* Right Content - Isometric Stack */}
@@ -220,9 +266,9 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
               className="bento-box"
             >
-              <h3 className="text-bento-title">ONLYOFFICE Core</h3>
+              <h3 className="text-bento-title">Vexius Native Engine</h3>
               <p className="text-bento-desc">
-                AI actions that format and write directly into your canvas using robust JWT-secured WOPI protocols.
+                Proprietary intelligent editors built from the ground up for speed, seamless AI integration, and unmatched flexibility.
               </p>
             </motion.div>
 
@@ -254,6 +300,76 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Editors Preview Section */}
+        <section id="editors" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              style={{ marginBottom: "64px" }}
+            >
+              <h2 style={{ fontSize: "2.5rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "16px" }}>
+                A complete suite for every document.
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", maxWidth: "600px", margin: "0 auto" }}>
+                Whether you're drafting a memo, crunching numbers, presenting ideas, or signing contracts, Vexius has an intelligent editor for it.
+              </p>
+            </motion.div>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
+              {editorsData.map((editor, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveEditorTab(i)}
+                  style={{
+                    padding: "12px 24px",
+                    borderRadius: "100px",
+                    border: activeEditorTab === i ? "1px solid #a855f7" : "1px solid var(--border-color)",
+                    background: activeEditorTab === i ? "rgba(168, 85, 247, 0.1)" : "transparent",
+                    color: activeEditorTab === i ? "#fff" : "var(--text-secondary)",
+                    cursor: "pointer",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  {editor.name}
+                </button>
+              ))}
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={activeEditorTab}
+                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -15, scale: 0.98 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="bento-box"
+                style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", maxWidth: "1000px", margin: "0 auto" }}
+              >
+              <div style={{ padding: "32px", borderBottom: "1px solid var(--border-color)", textAlign: "left" }}>
+                <h3 className="text-bento-title" style={{ marginBottom: "12px" }}>{editorsData[activeEditorTab].name}</h3>
+                <p className="text-bento-desc" style={{ marginBottom: "24px" }}>{editorsData[activeEditorTab].desc}</p>
+                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                  {editorsData[activeEditorTab].features.map((feat, idx) => (
+                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-primary)", fontSize: "0.9rem", background: "rgba(255,255,255,0.05)", padding: "8px 16px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#a855f7" }} />
+                      {feat}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ background: "#0f172a", padding: "0", width: "100%", display: "flex", justifyContent: "center" }}>
+                <Image src={editorsData[activeEditorTab].img} alt={editorsData[activeEditorTab].name} width={1200} height={800} style={{ width: "100%", height: "auto", display: "block" }} />
+              </div>
+            </motion.div>
+            </AnimatePresence>
+          </div>
+        </section>
+
         {/* Security Section */}
         <section id="security" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "64px", alignItems: "center" }}>
@@ -278,7 +394,7 @@ export default function Home() {
                   "Zero-Trust Architecture via Supabase Auth."
                 ].map((item, i) => (
                   <li key={i} style={{ display: "flex", alignItems: "center", gap: "12px", color: "var(--text-primary)", fontSize: "0.95rem" }}>
-                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }} />
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#a855f7" }} />
                     {item}
                   </li>
                 ))}
@@ -313,7 +429,7 @@ export default function Home() {
         </section>
 
         {/* Enterprise CTA */}
-        <section id="enterprise" style={{ width: "100%", maxWidth: "800px", padding: "160px 24px", textAlign: "center" }}>
+        <section id="enterprise" style={{ width: "100%", maxWidth: "800px", margin: "0 auto", padding: "160px 24px", textAlign: "center" }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -321,10 +437,10 @@ export default function Home() {
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
             <h2 style={{ fontSize: "3rem", fontWeight: 600, letterSpacing: "-0.04em", marginBottom: "24px" }}>
-              Ready to scale?
+              Ready for the intelligence era?
             </h2>
             <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginBottom: "48px" }}>
-              Deploy Vexius Engine on your own infrastructure or let us manage it for you. Perfect for high-compliance environments.
+              Deploy Vexius Intelligence Suite on your own infrastructure or let us manage it for you. Perfect for high-compliance environments.
             </p>
             <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
               <button className="btn-primary" style={{ padding: "16px 32px" }}>
@@ -343,9 +459,11 @@ export default function Home() {
             </div>
             <div style={{ display: "flex", gap: "24px" }}>
               <Link href="/docs" className="hover-link">Documentation</Link>
-              <Link href="/twitter" className="hover-link">Twitter</Link>
-              <Link href="/terms" className="hover-link">Terms</Link>
-              <Link href="/privacy" className="hover-link">Privacy</Link>
+              <Link href="https://x.com/vexiusint" target="_blank" rel="noopener noreferrer" className="hover-link" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </Link>
             </div>
           </div>
         </footer>

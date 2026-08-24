@@ -608,3 +608,26 @@ a {
 .vexius-slide-content li::marker {
   color: #ea580c;
 }
+
+/* Additional Responsive Classes for Hero */
+.hero-content {
+  align-items: flex-start;
+}
+.hero-buttons {
+  justify-content: flex-start;
+}
+.hero-text-container {
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    align-items: center !important;
+  }
+  .hero-buttons {
+    justify-content: center !important;
+  }
+  .hero-text-container {
+    text-align: center !important;
+  }
+}

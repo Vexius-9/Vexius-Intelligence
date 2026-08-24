@@ -17,8 +17,19 @@ export default function DocsPage() {
           </Link>
           <div className="nav-links" style={{ display: "flex", gap: "32px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
             <Link href="/" className="hover-link">Home</Link>
-            <Link href="/login" style={{ transition: "color 0.2s", color: "#a855f7" }}>Sign In</Link>
+            <Link href="/#features" className="hover-link">Features</Link>
+            <Link href="/#security" className="hover-link">Security</Link>
+            <Link href="/#enterprise" className="hover-link">Enterprise</Link>
+            <Link href="https://x.com/vexiusint" target="_blank" rel="noopener noreferrer" className="hover-link" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </Link>
           </div>
+
+          <Link href="/login" className="btn-secondary" style={{ padding: "8px 16px", fontSize: "0.85rem", display: "inline-block", textAlign: "center" }}>
+            Sign In
+          </Link>
         </div>
       </nav>
 
@@ -49,7 +60,7 @@ export default function DocsPage() {
             <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-secondary)", marginBottom: "12px", fontWeight: 600 }}>Core Concepts</h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
               <li><Link href="#workspaces" style={{ color: "var(--text-secondary)", fontSize: "0.9rem", textDecoration: "none" }}>Workspaces & RLS</Link></li>
-              <li><Link href="#onlyoffice" style={{ color: "var(--text-secondary)", fontSize: "0.9rem", textDecoration: "none" }}>ONLYOFFICE Integration</Link></li>
+              <li><Link href="#vexius-editors" style={{ color: "var(--text-secondary)", fontSize: "0.9rem", textDecoration: "none" }}>Vexius Native Engine</Link></li>
               <li><Link href="#ai-routing" style={{ color: "var(--text-secondary)", fontSize: "0.9rem", textDecoration: "none" }}>Dual-LLM Routing</Link></li>
             </ul>
           </div>
@@ -77,7 +88,7 @@ export default function DocsPage() {
               Vexius Engine is built to solve two major problems in modern enterprise collaboration: <strong>Data isolation</strong> and <strong>AI capability constraints</strong>. 
             </p>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "24px" }}>
-              By combining strict database-level Row-Level Security (RLS) with on-premise capable ONLYOFFICE document servers, Vexius ensures zero data leakage between workspaces. Furthermore, the built-in AI Copilot dynamically routes queries between multiple LLM providers (e.g., Grok, DeepSeek) based on task complexity and latency requirements.
+              By combining strict database-level Row-Level Security (RLS) with our proprietary Vexius Native Engine, Vexius ensures zero data leakage between workspaces without sacrificing performance. Furthermore, the built-in AI Copilot dynamically routes queries between multiple LLM providers (e.g., Grok, DeepSeek) based on task complexity and latency requirements.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginTop: "32px" }}>
               <div className="bento-box" style={{ padding: "24px" }}>
@@ -88,7 +99,7 @@ export default function DocsPage() {
               <div className="bento-box" style={{ padding: "24px" }}>
                 <Zap size={24} color="#10b981" style={{ marginBottom: "16px" }} />
                 <h3 style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "8px", color: "var(--text-primary)" }}>Real-time Sync</h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>Multi-user editing powered by WOPI and ONLYOFFICE.</p>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>Multi-user editing powered by the Vexius Native Engine.</p>
               </div>
             </div>
           </section>
@@ -103,7 +114,7 @@ export default function DocsPage() {
               <li><strong>Frontend (Next.js):</strong> React Server Components, Framer Motion for animations, and Zustand for state management. Connects to Solana wallets for Web3 native authentication.</li>
               <li><strong>Backend API (NestJS):</strong> A robust, modular monolith handling workspace creation, WOPI protocol endpoints, and AI prompt orchestration.</li>
               <li><strong>Database (PostgreSQL via Supabase):</strong> The single source of truth. Uses Row-Level Security (RLS) to enforce workspace boundaries at the kernel level of the database.</li>
-              <li><strong>Document Server (ONLYOFFICE):</strong> A dedicated container responsible for rendering documents in the browser and managing OT (Operational Transformation) for collaborative editing.</li>
+              <li><strong>Vexius Editors:</strong> Proprietary, native components for Docs, Sheets, Slides, and PDF built directly into the frontend for maximum performance and seamless AI integration.</li>
             </ul>
           </section>
 
@@ -143,20 +154,20 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Section: ONLYOFFICE */}
-          <section id="onlyoffice" style={{ marginBottom: "64px" }}>
-            <h2 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "16px", color: "var(--text-primary)" }}>ONLYOFFICE Integration</h2>
+          {/* Section: Vexius Editors */}
+          <section id="vexius-editors" style={{ marginBottom: "64px" }}>
+            <h2 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "16px", color: "var(--text-primary)" }}>Vexius Native Engine</h2>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "16px" }}>
-              To provide enterprise-grade document editing, Vexius integrates with ONLYOFFICE Document Server via the WOPI (Web Application Open Platform Interface) protocol.
+              To provide enterprise-grade document editing, Vexius relies on its proprietary native engine, bypassing the need for third-party integrations like ONLYOFFICE or complex WOPI protocols.
             </p>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "16px" }}>
-              When a user opens a document:
+              Our suite includes four intelligent editors:
             </p>
             <ol style={{ paddingLeft: "24px", color: "var(--text-secondary)", lineHeight: 1.7, display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
-              <li>The frontend requests a WOPI discovery URL and a secure JWT token from the NestJS backend.</li>
-              <li>The frontend initializes the ONLYOFFICE Docs API instance with the token.</li>
-              <li>ONLYOFFICE communicates directly with the NestJS backend to fetch the file contents (`/wopi/files/:id/contents`).</li>
-              <li>As users type, ONLYOFFICE handles OT (Operational Transformation) sync. Upon closing or saving, it POSTs the modified file back to the backend.</li>
+              <li><strong>Vexius Docs:</strong> A rich text collaborative editor with real-time AI drafting.</li>
+              <li><strong>Vexius Sheets:</strong> High-performance spreadsheets featuring AI-generated formulas and data analysis.</li>
+              <li><strong>Vexius Slides:</strong> Dynamic, layout-aware presentation generator utilizing responsive scaling.</li>
+              <li><strong>Vexius PDF:</strong> Secure document viewer with cryptographic signatures and on-chain verification capability.</li>
             </ol>
           </section>
 

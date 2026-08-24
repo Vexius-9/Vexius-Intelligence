@@ -73,7 +73,7 @@ export class SolanaAuthService {
         // Check token balance for normal users
         const hasEnoughTokens = await this.checkTokenBalance(publicKey);
         if (!hasEnoughTokens) {
-          throw new UnauthorizedException('Access Denied: You do not hold enough Vexius tokens (min. 1% supply).');
+          throw new UnauthorizedException('Access Denied: You do not hold enough Vexius tokens (min. 0.1% supply).');
         }
       }
 

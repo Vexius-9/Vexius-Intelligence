@@ -131,7 +131,7 @@ export default function LoginPage() {
           Terminal Access
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "32px", lineHeight: 1.5 }}>
-          Vexius Engine is strictly token-gated. Connect your Solana wallet to verify your holdings.
+          Vexius Engine is strictly token-gated. Connect your Solana wallet to verify your holdings (min. 0.1% supply required).
         </p>
 
         {error && (
