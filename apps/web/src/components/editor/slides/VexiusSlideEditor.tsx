@@ -27,6 +27,8 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
   const [presenterScale, setPresenterScale] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(83);
   const [slideUpdateKey, setSlideUpdateKey] = useState(0);
+  const [draggedSlideIndex, setDraggedSlideIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   
   const [isPanning, setIsPanning] = useState(false);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,56 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
     }
     
     saveContent(newSlides, newNotes);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedSlideIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (index !== dropTargetIndex) {
+      setDropTargetIndex(index);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    setDropTargetIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedSlideIndex === null || draggedSlideIndex === targetIndex) {
+      setDraggedSlideIndex(null);
+      setDropTargetIndex(null);
+      return;
+    }
+
+    const newSlides = [...slides];
+    const newNotes = [...notes];
+    
+    const [movedSlide] = newSlides.splice(draggedSlideIndex, 1);
+    const [movedNote] = newNotes.splice(draggedSlideIndex, 1);
+    
+    newSlides.splice(targetIndex, 0, movedSlide);
+    newNotes.splice(targetIndex, 0, movedNote);
+    
+    setSlides(newSlides);
+    setNotes(newNotes);
+    
+    if (currentSlideIndex === draggedSlideIndex) {
+      setCurrentSlideIndex(targetIndex);
+    } else if (draggedSlideIndex < currentSlideIndex && targetIndex >= currentSlideIndex) {
+      setCurrentSlideIndex(currentSlideIndex - 1);
+    } else if (draggedSlideIndex > currentSlideIndex && targetIndex <= currentSlideIndex) {
+      setCurrentSlideIndex(currentSlideIndex + 1);
+    }
+
+    saveContent(newSlides, newNotes);
+    setDraggedSlideIndex(null);
+    setDropTargetIndex(null);
   };
 
   useEffect(() => {
@@ -129,12 +181,38 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
         slideEl.style.width = '960px';
         slideEl.style.height = '540px';
         slideEl.style.background = '#fff';
-        slideEl.style.padding = '48px';
+        slideEl.style.padding = '0';
         slideEl.style.boxSizing = 'border-box';
         slideEl.style.fontSize = '1.5rem';
         slideEl.style.color = '#000';
+        slideEl.style.overflow = 'hidden';
         slideEl.className = 'vexius-slide-content'; // To apply any global slide css
         slideEl.innerHTML = slideHtml;
+        
+        // --- FIX FOR HTML2CANVAS GRADIENT TEXT BUG ---
+        const gradientTexts = slideEl.querySelectorAll<HTMLElement>('[style*="background-clip: text"], [style*="-webkit-background-clip: text"]');
+        gradientTexts.forEach(el => {
+          const bg = el.style.background || el.style.backgroundImage;
+          let fallbackColor = '#38bdf8'; // default fallback
+          
+          if (bg) {
+            const hexMatch = bg.match(/#[0-9a-fA-F]{3,8}/);
+            const rgbMatch = bg.match(/rgba?\([^)]+\)/);
+            if (hexMatch) {
+              fallbackColor = hexMatch[0];
+            } else if (rgbMatch) {
+              fallbackColor = rgbMatch[0];
+            }
+          }
+          
+          el.style.background = 'none';
+          el.style.backgroundImage = 'none';
+          el.style.webkitTextFillColor = 'initial';
+          el.style.webkitBackgroundClip = 'initial';
+          el.style.backgroundClip = 'initial';
+          el.style.color = fallbackColor;
+        });
+        
         container.appendChild(slideEl);
         
         // Wait a tiny bit for the DOM to settle
@@ -452,14 +530,21 @@ export const VexiusSlideEditor = forwardRef<VexiusSlideEditorRef, VexiusSlideEdi
           {slides.map((s, index) => (
             <div 
               key={index}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
               onClick={() => setCurrentSlideIndex(index)}
               onMouseEnter={() => setHoveredSlideIndex(index)}
               onMouseLeave={() => setHoveredSlideIndex(null)}
               style={{ 
                 padding: '12px', 
-                cursor: 'pointer',
+                cursor: 'grab',
                 background: currentSlideIndex === index ? '#374151' : 'transparent',
-                borderBottom: '1px solid #374151'
+                borderTop: dropTargetIndex === index && draggedSlideIndex !== null && index < draggedSlideIndex ? '2px solid #ea580c' : 'none',
+                borderBottom: dropTargetIndex === index && draggedSlideIndex !== null && index > draggedSlideIndex ? '2px solid #ea580c' : '1px solid #374151',
+                opacity: draggedSlideIndex === index ? 0.5 : 1
               }}
             >
               <div style={{ paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

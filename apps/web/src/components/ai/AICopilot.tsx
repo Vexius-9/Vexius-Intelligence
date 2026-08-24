@@ -288,7 +288,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       </div>
 
       {/* Messages Area */}
-      <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div className="custom-scrollbar" style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "24px" }}>
         {messages.map((msg, i) => (
           <div key={i} style={{ display: "flex", gap: "12px", flexDirection: msg.role === "user" ? "row-reverse" : "row" }}>
             {msg.role === "assistant" && (
@@ -329,7 +329,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                 </ReactMarkdown>
               )}
               {msg.role === "assistant" && msg.id !== "1" && documentContext?.documentType !== 'pdf' && (
-                <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <button 
                     onClick={() => {
                       if (onApplyAction) {
@@ -359,7 +359,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                         }
                       }
                     }} 
-                    style={{ padding: '6px 12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}>
+                    style={{ padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '16px', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
                     <CheckCircle size={14} /> Apply to {documentContext?.documentType === 'spreadsheet' ? 'Sheet' : documentContext?.documentType === 'presentation' ? 'Slide' : 'Document'}
                   </button>
                   {documentContext?.documentType === 'presentation' && (
@@ -372,7 +372,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                           onApplyAction(`<!-- ACTION:NEW_SLIDE -->\n${text}`);
                         }
                       }}
-                      style={{ padding: '6px 12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}
+                      style={{ padding: '6px 12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '16px', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
                     >
                       <CheckCircle size={14} /> Insert as New Slide
                     </button>
@@ -387,7 +387,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                           onApplyAction(`<!-- ACTION:REPLACE_SLIDE -->\n${text}`);
                         }
                       }}
-                      style={{ padding: '6px 12px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}
+                      style={{ padding: '6px 12px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '16px', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
                     >
                       <CheckCircle size={14} /> Replace Current Slide
                     </button>
@@ -400,7 +400,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                           onApplyAction(`<!-- ACTION:SPEAKER_NOTES -->\n${text}`);
                         }
                       }}
-                      style={{ padding: '6px 12px', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}
+                      style={{ padding: '6px 12px', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '16px', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
                     >
                       <CheckCircle size={14} /> Apply to Notes
                     </button>

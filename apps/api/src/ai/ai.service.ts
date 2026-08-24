@@ -54,6 +54,7 @@ export class AiService {
   private buildSystemPrompt(context?: any) {
     let prompt = `You are Vexius AI, an intelligent document collaboration assistant.\n`;
     prompt += `You help users write, edit, and analyze documents, spreadsheets, and presentations.\n`;
+    prompt += `The official website of Vexius is https://vexiusintelligence.tech/.\n`;
 
     if (context) {
       if (context.documentTitle) {
