@@ -103,12 +103,10 @@ export default function Home() {
             >
               <div className="hero-content" style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
                 <div
+                  className="ios-glass-pill"
                   style={{
                     display: "inline-block",
-                    padding: "4px 12px",
-                    borderRadius: "100px",
-                    border: "1px solid var(--border-color)",
-                    background: "rgba(255,255,255,0.02)",
+                    padding: "6px 16px",
                     fontSize: "0.85rem",
                     color: "var(--text-secondary)",
                     letterSpacing: "-0.01em",
@@ -118,7 +116,7 @@ export default function Home() {
                 </div>
 
                 {process.env.NEXT_PUBLIC_VEXIUS_CA && (
-                  <a href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_VEXIUS_CA}`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(168, 85, 247, 0.1)", border: "1px solid rgba(168, 85, 247, 0.2)", padding: "4px 12px", borderRadius: "100px", color: "#a855f7", textDecoration: "none", fontSize: "0.85rem", fontWeight: 500, transition: "all 0.2s" }} onMouseOver={(e) => { e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.4)"; }} onMouseOut={(e) => { e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)"; e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.2)"; }}>
+                  <a href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_VEXIUS_CA}`} target="_blank" rel="noopener noreferrer" className="ios-glass-pill" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 16px", color: "var(--text-primary)", textDecoration: "none", fontSize: "0.85rem", fontWeight: 500 }}>
                     <Coins size={14} />
                     CA: {process.env.NEXT_PUBLIC_VEXIUS_CA}
                   </a>
@@ -266,11 +264,12 @@ export default function Home() {
                 <button
                   key={i}
                   onClick={() => setActiveEditorTab(i)}
+                  className={activeEditorTab === i ? "ios-glass-pill" : ""}
                   style={{
                     padding: "12px 24px",
                     borderRadius: "100px",
-                    border: activeEditorTab === i ? "1px solid #a855f7" : "1px solid var(--border-color)",
-                    background: activeEditorTab === i ? "rgba(168, 85, 247, 0.1)" : "transparent",
+                    border: activeEditorTab === i ? undefined : "1px solid transparent",
+                    background: activeEditorTab === i ? undefined : "transparent",
                     color: activeEditorTab === i ? "#fff" : "var(--text-secondary)",
                     cursor: "pointer",
                     fontSize: "0.95rem",

@@ -3,10 +3,12 @@ import Link from "next/link";
 import { ChevronRight, Book, Shield, Zap, Database, Code } from "lucide-react";
 import Image from "next/image";
 import logoImg from "../../../public/logo.png";
+import { FluidBackground } from "@/components/ui/FluidBackground";
 
 export default function DocsPage() {
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
+    <div style={{ position: "relative", minHeight: "100vh", backgroundColor: "transparent", overflow: "hidden", color: "white" }}>
+      <FluidBackground />
       {/* Navigation */}
       <nav className="nav-bar">
         <div className="nav-content">
@@ -34,7 +36,7 @@ export default function DocsPage() {
         </div>
       </nav>
 
-      <div style={{ display: "flex", alignItems: "flex-start", maxWidth: "1200px", margin: "0 auto", paddingTop: "64px" }}>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "flex-start", maxWidth: "1200px", margin: "0 auto", paddingTop: "64px" }}>
         
         {/* Sidebar */}
         <aside style={{ 
@@ -125,7 +127,7 @@ export default function DocsPage() {
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "16px" }}>
               Vexius supports seamless Web3 authentication. Instead of traditional email/password setups, users authenticate by cryptographically signing a message using their Solana wallet (e.g., Phantom, Solflare).
             </p>
-            <div style={{ background: "#000", padding: "24px", borderRadius: "8px", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)", overflowX: "auto" }}>
+            <div className="ios-glass-card" style={{ padding: "24px", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)", overflowX: "auto" }}>
               <span style={{ color: "#a855f7" }}>const</span> message <span style={{ color: "#a855f7" }}>=</span> new TextEncoder().encode(<span style={{ color: "#10b981" }}>"Sign this message to authenticate with Vexius Engine"</span>);<br />
               <span style={{ color: "#a855f7" }}>const</span> signature <span style={{ color: "#a855f7" }}>=</span> await wallet.signMessage(message);<br />
               <br />
@@ -143,7 +145,7 @@ export default function DocsPage() {
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "24px" }}>
               Even if a vulnerability exists in the application code, the database itself will reject queries attempting to read documents from a workspace the user is not a member of.
             </p>
-            <div style={{ background: "#000", padding: "24px", borderRadius: "8px", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)", overflowX: "auto" }}>
+            <div className="ios-glass-card" style={{ padding: "24px", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)", overflowX: "auto" }}>
               <span style={{ color: "#3b82f6" }}>-- Example RLS Policy</span><br />
               <span style={{ color: "#a855f7" }}>CREATE POLICY</span> "Users can read workspace documents"<br />
               <span style={{ color: "#a855f7" }}>ON</span> documents <span style={{ color: "#a855f7" }}>FOR SELECT</span><br />
