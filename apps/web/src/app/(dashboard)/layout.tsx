@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Settings, Folder, FileText, ChevronRight } from "lucide-react";
+import logoImg from "../../../public/logo.png";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { connected } = useWallet();
@@ -38,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-              <Image src="/logo.png" alt="Vexius Logo" width={24} height={24} />
+              <Image src={logoImg} alt="Vexius Logo" width={24} height={24} />
               <span style={{ fontWeight: 600, fontSize: "1.1rem", letterSpacing: "-0.01em" }}>Vexius</span>
             </Link>
             <div style={{ width: "1px", height: "24px", background: "var(--border-color)", margin: "0 8px" }} />

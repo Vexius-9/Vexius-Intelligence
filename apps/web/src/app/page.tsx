@@ -6,6 +6,8 @@ import { ChevronRight, Database, Lock, Globe, Cpu, ArrowRight, Coins } from "luc
 import Image from "next/image";
 import { IsometricStack } from "@/components/ui/IsometricStack";
 import Link from "next/link";
+import logoImg from "../../public/logo.png";
+import { FluidBackground } from "@/components/ui/FluidBackground";
 
 export default function Home() {
   const [activeEditorTab, setActiveEditorTab] = useState(0);
@@ -38,12 +40,13 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
+    <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden", color: "white" }}>
+      <FluidBackground />
       {/* Navigation */}
       <nav className="nav-bar">
         <div className="nav-content">
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Image src="/logo.png" alt="Vexius Logo" width={24} height={24} />
+            <Image src={logoImg} alt="Vexius Logo" width={24} height={24} />
             <span style={{ fontWeight: 600, fontSize: "1.05rem", letterSpacing: "-0.01em" }}>
               Vexius
             </span>
@@ -74,88 +77,29 @@ export default function Home() {
           flexDirection: "column",
           alignItems: "center",
           width: "100%",
+          position: "relative",
+          zIndex: 5
         }}
       >
         <section
           style={{
             position: "relative",
-            minHeight: "100vh",
+            minHeight: "calc(100vh - 80px)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            padding: "160px 24px 80px 24px",
+            padding: "120px 6vw 60px 6vw",
             width: "100%",
-            overflow: "hidden",
           }}
         >
-          {/* Ambient Glow (Right) */}
-          <motion.div
-            animate={{
-              x: [0, 60, -30, 0],
-              y: [0, 40, -50, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            style={{
-              position: "absolute",
-              top: "20%",
-              right: "10%",
-              width: "600px",
-              height: "600px",
-              background: "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(0,0,0,0) 70%)",
-              filter: "blur(80px)",
-              pointerEvents: "none",
-              zIndex: 0,
-            }}
-          />
-
-          {/* Ambient Glow (Top Left) */}
-          <motion.div
-            animate={{
-              x: [0, -50, 40, 0],
-              y: [0, -30, 60, 0],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            style={{
-              position: "absolute",
-              top: "-10%",
-              left: "-10%",
-              width: "500px",
-              height: "500px",
-              background: "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(0,0,0,0) 70%)",
-              filter: "blur(80px)",
-              pointerEvents: "none",
-              zIndex: 0,
-            }}
-          />
-
-          {/* Grid Pattern */}
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-            maskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
-            WebkitMaskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
-            pointerEvents: "none",
-            zIndex: 0,
-          }} />
-
-          <div className="hero-container" style={{ display: "flex", flexWrap: "wrap", width: "100%", maxWidth: "1200px", gap: "64px", alignItems: "center", position: "relative", zIndex: 1 }}>
+          <div className="hero-container" style={{ display: "flex", flexWrap: "wrap", width: "100%", maxWidth: "1200px", gap: "64px", alignItems: "center", position: "relative" }}>
             
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              style={{ flex: "1 1 400px", textAlign: "left" }}
+              style={{ flex: "1 1 500px", textAlign: "left", maxWidth: "650px" }}
             >
               <div className="hero-content" style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
                 <div
@@ -210,9 +154,8 @@ export default function Home() {
                   Documentation
                 </Link>
               </div>
-
-
             </motion.div>
+
 
             {/* Right Content - Isometric Stack */}
             <motion.div
@@ -301,7 +244,7 @@ export default function Home() {
         </section>
 
         {/* Editors Preview Section */}
-        <section id="editors" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
+        <section id="editors" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "transparent" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -362,7 +305,7 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <div style={{ background: "#0f172a", padding: "0", width: "100%", display: "flex", justifyContent: "center" }}>
+              <div style={{ background: "transparent", padding: "0", width: "100%", display: "flex", justifyContent: "center" }}>
                 <Image src={editorsData[activeEditorTab].img} alt={editorsData[activeEditorTab].name} width={1200} height={800} style={{ width: "100%", height: "auto", display: "block" }} />
               </div>
             </motion.div>
@@ -371,7 +314,7 @@ export default function Home() {
         </section>
 
         {/* Security Section */}
-        <section id="security" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "var(--bg-secondary)" }}>
+        <section id="security" style={{ width: "100%", padding: "120px 24px", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", background: "transparent" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", flexWrap: "wrap", gap: "64px", alignItems: "center" }}>
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -454,7 +397,7 @@ export default function Home() {
         <footer style={{ width: "100%", borderTop: "1px solid var(--border-color)", padding: "48px 24px", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 600, color: "var(--text-primary)" }}>
-              <Image src="/logo.png" alt="Vexius Logo" width={16} height={16} />
+              <Image src={logoImg} alt="Vexius Logo" width={16} height={16} />
               Vexius
             </div>
             <div style={{ display: "flex", gap: "24px" }}>
