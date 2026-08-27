@@ -10,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import logoImg from "../../../../public/logo.png";
 import bs58 from "bs58";
+import { FluidBackground } from "@/components/ui/FluidBackground";
 
 export default function LoginPage() {
   const { connected, publicKey, signMessage, disconnect } = useWallet();
@@ -88,9 +89,11 @@ export default function LoginPage() {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      background: "var(--bg-primary)",
-      position: "relative"
+      background: "transparent",
+      position: "relative",
+      overflow: "hidden"
     }}>
+      <FluidBackground />
       <Link href="/" style={{
         position: "absolute",
         top: "24px",
@@ -102,7 +105,8 @@ export default function LoginPage() {
         textDecoration: "none",
         fontSize: "0.9rem",
         fontWeight: 500,
-        transition: "color 0.2s"
+        transition: "color 0.2s",
+        zIndex: 1
       }}
       className="back-btn"
       onMouseOver={(e) => e.currentTarget.style.color = "var(--text-primary)"}
@@ -114,15 +118,14 @@ export default function LoginPage() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
+        className="ios-glass-card"
         style={{
           width: "100%",
           maxWidth: "400px",
           padding: "48px 32px",
-          background: "var(--bg-secondary)",
-          border: "1px solid var(--border-color)",
-          borderRadius: "16px",
           textAlign: "center",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+          position: "relative",
+          zIndex: 1
         }}
       >
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
