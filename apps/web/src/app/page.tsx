@@ -196,7 +196,7 @@ export default function Home() {
             >
               <h3 className="text-bento-title">Native RAG Architecture</h3>
               <p className="text-bento-desc">
-                Instantly query across all your workspace documents. Our infrastructure indexes your data in real-time, enabling semantic search with sub-second latency powered by OpenAI embeddings.
+                Instantly query across all your workspace documents. Our infrastructure indexes your data in real-time, enabling semantic search with sub-second latency powered by Vexius embeddings.
               </p>
             </motion.div>
             
@@ -222,7 +222,7 @@ export default function Home() {
             >
               <h3 className="text-bento-title">Dual-LLM Engine</h3>
               <p className="text-bento-desc">
-                Powered by Grok (T2) and DeepSeek (T1) for complex reasoning. Smart routing optimizes for both cost and speed.
+                Powered by Vexius AI for complex reasoning. Smart routing optimizes for both cost and speed.
               </p>
             </motion.div>
             

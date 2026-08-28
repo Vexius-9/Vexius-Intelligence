@@ -91,7 +91,7 @@ export default function DocsPage() {
               Vexius Engine is built to solve two major problems in modern enterprise collaboration: <strong>Data isolation</strong> and <strong>AI capability constraints</strong>. 
             </p>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "24px" }}>
-              By combining strict database-level Row-Level Security (RLS) with our proprietary Vexius Native Engine, Vexius ensures zero data leakage between workspaces without sacrificing performance. Furthermore, the built-in AI Copilot dynamically routes queries between multiple LLM providers (e.g., Grok, DeepSeek) based on task complexity and latency requirements.
+              By combining strict database-level Row-Level Security (RLS) with our proprietary Vexius Native Engine, Vexius ensures zero data leakage between workspaces without sacrificing performance. Furthermore, the built-in AI Copilot dynamically routes queries to the most optimal Vexius AI models based on task complexity and latency requirements.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginTop: "32px" }}>
               <div className="bento-box" style={{ padding: "24px" }}>
@@ -181,8 +181,8 @@ export default function DocsPage() {
               Vexius does not rely on a single AI provider. The <strong>Dual-LLM Router</strong> automatically determines the best model for the current task.
             </p>
             <ul style={{ paddingLeft: "24px", color: "var(--text-secondary)", lineHeight: 1.7, display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
-              <li><strong>DeepSeek (Coder/Reasoning):</strong> Used for complex document restructuring, code generation, and heavy analytical reasoning.</li>
-              <li><strong>Grok (Fast/Creative):</strong> Used for rapid summarization, drafting emails, and general quick-response Q&A.</li>
+              <li><strong>Vexius Reasoning Model:</strong> Used for complex document restructuring, code generation, and heavy analytical reasoning.</li>
+              <li><strong>Vexius Creative Model:</strong> Used for rapid summarization, drafting emails, and general quick-response Q&A.</li>
             </ul>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7 }}>
               This architecture ensures the highest quality output while optimizing API costs and response latency.

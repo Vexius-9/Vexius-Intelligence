@@ -21,7 +21,7 @@ export default function TermsPage() {
 
         <section>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>2. Description of Service</h2>
-          <p>Vexius provides an AI-powered document collaboration platform integrating ONLYOFFICE infrastructure with Dual-LLM routing capabilities (Grok and DeepSeek). We provide real-time aggregation and strictly isolated workspace environments for secure document editing.</p>
+          <p>Vexius provides an AI-powered document collaboration platform integrating ONLYOFFICE infrastructure with advanced Vexius AI routing capabilities. We provide real-time aggregation and strictly isolated workspace environments for secure document editing.</p>
         </section>
 
         <section>

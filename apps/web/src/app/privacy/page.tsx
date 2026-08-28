@@ -36,7 +36,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>4. Third-Party AI Integrations</h2>
-          <p>To provide advanced AI reasoning capabilities, we route specific prompts to third-party Large Language Models (specifically Grok and DeepSeek). When you trigger an AI action, only the necessary document context required to complete the task is securely transmitted. We do not use your private documents to train our proprietary models without your explicit consent.</p>
+          <p>To provide advanced AI reasoning capabilities, we route specific prompts to our advanced Vexius AI models. When you trigger an AI action, only the necessary document context required to complete the task is securely transmitted. We do not use your private documents to train our proprietary models without your explicit consent.</p>
         </section>
 
         <section>

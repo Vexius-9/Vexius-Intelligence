@@ -94,7 +94,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         
         // For grammar, rewrite, and formula generation, text is absolutely REQUIRED.
         if ((!text || text.trim() === "") && ['grammar', 'rewrite', 'generate_formula'].includes(action)) {
-          toast.error("ONLYOFFICE membatasi akses teks dari luar. Silakan gunakan tab 'Plugins' -> 'ChatGPT/AI' bawaan ONLYOFFICE di toolbar atas untuk aksi ini (Anda bisa memasukkan API Key di sana).", { duration: 6000 });
+          toast.error("ONLYOFFICE membatasi akses teks dari luar. Silakan gunakan tab 'Plugins' -> 'Vexius AI' bawaan ONLYOFFICE di toolbar atas untuk aksi ini (Anda bisa memasukkan API Key di sana).", { duration: 6000 });
           setIsProcessingAction(false);
           if (onAiEnd) onAiEnd();
           return;
@@ -274,9 +274,9 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
               appearance: "none"
             }}
           >
-            <option value="openai:gpt-4o">OpenAI GPT-4o</option>
-            <option value="xai:grok-beta">X.AI Grok</option>
-            <option value="deepseek:deepseek-chat">DeepSeek</option>
+            <option value="openai:gpt-4o">Vexius General</option>
+            <option value="xai:grok-beta">Vexius Creative</option>
+            <option value="deepseek:deepseek-chat">Vexius Reasoning</option>
           </select>
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('vexius:toggle-ai'))}
@@ -534,7 +534,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             type="text"
             value={input}
             onChange={handleInputChange}
-            placeholder={`Ask ${selectedModel === "t1" ? "DeepSeek" : "Grok"} for help...`}
+            placeholder="Ask Vexius AI for help..."
             style={{
               flex: 1,
               background: "transparent",
