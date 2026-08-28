@@ -15,25 +15,25 @@ export default function Home() {
   const editorsData = [
     { 
       name: "Vexius Docs", 
-      img: "/img/docs.png", 
+      img: "/img/docs-v2.png", 
       desc: "Collaborative word processing with real-time AI assistance.",
       features: ["Live Multiplayer Editing", "AI Drafting & Summarization", "Markdown Support"]
     },
     { 
       name: "Vexius Sheets", 
-      img: "/img/sheet.png", 
+      img: "/img/sheet-v2.png", 
       desc: "Powerful spreadsheets with AI-driven formulas and data analysis.",
       features: ["AI Formula Generation", "Data Validation", "Large Dataset Support"]
     },
     { 
       name: "Vexius Slides", 
-      img: "/img/slides.png", 
+      img: "/img/slides-v2.png", 
       desc: "Dynamic presentations generated instantly from prompts.",
       features: ["Prompt to Presentation", "Web3 Themes", "PDF Export"]
     },
     { 
       name: "Vexius PDF", 
-      img: "/img/pdf.png", 
+      img: "/img/pdf-v2.png", 
       desc: "Secure PDF viewing, annotation, and cryptographic signatures.",
       features: ["Digital Signatures", "Annotations", "High Fidelity Rendering"]
     }
