@@ -42,6 +42,7 @@ export default function Home() {
   return (
     <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden", color: "white" }}>
       <FluidBackground />
+      
       {/* Navigation */}
       <nav className="nav-bar">
         <div className="nav-content">
