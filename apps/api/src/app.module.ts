@@ -10,6 +10,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { AiModule } from './ai/ai.module';
 import { WorkerModule } from './worker/worker.module';
 import { AuditModule } from './audit/audit.module';
+import { BrowserModule } from './browser/browser.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -30,6 +31,7 @@ import { APP_GUARD } from '@nestjs/core';
     AiModule,
     WorkerModule,
     AuditModule,
+    BrowserModule,
   ],
   controllers: [AppController],
   providers: [

@@ -174,19 +174,22 @@ export default function DocsPage() {
             </ol>
           </section>
 
-          {/* Section: Dual-LLM Routing */}
-          <section id="ai-routing" style={{ marginBottom: "64px" }}>
-            <h2 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "16px", color: "var(--text-primary)" }}>Dual-LLM AI Routing</h2>
+          {/* Section: Vexius SDK & Custom Agents */}
+          <section id="vexius-sdk" style={{ marginBottom: "64px" }}>
+            <h2 style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "16px", color: "var(--text-primary)" }}>Vexius Agent SDK</h2>
             <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "16px" }}>
-              Vexius does not rely on a single AI provider. The <strong>Dual-LLM Router</strong> automatically determines the best model for the current task.
+              Vexius exports a dedicated Node.js library <code>@vexius/sdk</code> letting developers implement, validate, and execute customized agent routines outside the Vexius core module.
             </p>
-            <ul style={{ paddingLeft: "24px", color: "var(--text-secondary)", lineHeight: 1.7, display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
-              <li><strong>Vexius Reasoning Model:</strong> Used for complex document restructuring, code generation, and heavy analytical reasoning.</li>
-              <li><strong>Vexius Creative Model:</strong> Used for rapid summarization, drafting emails, and general quick-response Q&A.</li>
-            </ul>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7 }}>
-              This architecture ensures the highest quality output while optimizing API costs and response latency.
-            </p>
+            <div className="ios-glass-card" style={{ padding: "24px", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)", overflowX: "auto" }}>
+              <span style={{ color: "#a855f7" }}>import</span> &#123; VexiusClient, VexiusAgent &#125; <span style={{ color: "#a855f7" }}>from</span> <span style={{ color: "#10b981" }}>"@vexius/sdk"</span>;<br />
+              <br />
+              <span style={{ color: "#a855f7" }}>const</span> agent <span style={{ color: "#a855f7" }}>=</span> new VexiusAgent(&#123;<br />
+              &nbsp;&nbsp;id: <span style={{ color: "#10b981" }}>"custom-writer"</span>,<br />
+              &nbsp;&nbsp;name: <span style={{ color: "#10b981" }}>"Writer Agent"</span>,<br />
+              &nbsp;&nbsp;version: <span style={{ color: "#10b981" }}>"1.0.0"</span>,<br />
+              &nbsp;&nbsp;permissions: [<span style={{ color: "#10b981" }}>"workspace.read"</span>]<br />
+              &#125;);
+            </div>
           </section>
 
         </main>

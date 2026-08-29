@@ -119,3 +119,70 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+model WorkspaceMemory {
+  id               String   @id @default(uuid())
+  workspaceId      String   @map("workspace_id")
+  type             String   // preference, fact, entity, assumption, decision, template
+  key              String
+  value            String
+  sourceDocumentId String?  @map("source_document_id")
+  confidence       Float    @default(1.0)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("workspace_memories")
+}
+
+model Automation {
+  id          String          @id @default(uuid())
+  workspaceId String          @map("workspace_id")
+  userId      String          @map("user_id")
+  name        String
+  prompt      String
+  schedule    String          // Cron expression or interval definition
+  status      String          @default("active") // active, paused
+  lastRunAt   DateTime?       @map("last_run_at")
+  nextRunAt   DateTime?       @map("next_run_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  runs        AutomationRun[]
+
+  @@map("automations")
+}
+
+model AutomationRun {
+  id           String     @id @default(uuid())
+  automationId String     @map("automation_id")
+  status       String     @default("pending") // pending, running, completed, failed
+  result       String?
+  startedAt    DateTime   @default(now()) @map("started_at")
+  completedAt  DateTime?  @map("completed_at")
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@map("automation_runs")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  workspaceId String    @map("workspace_id")
+  userId      String    @map("user_id")
+  name        String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  expiresAt   DateTime? @map("expires_at")
+
+  @@map("api_keys")
+}
+
+model MarketplaceAgent {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  version     String
+  author      String
+  manifestUrl String   @map("manifest_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("marketplace_agents")
+}

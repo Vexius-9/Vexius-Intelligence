@@ -2,6 +2,8 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { BrowserService } from '../browser/browser.service';
+import { ModelRouterService } from './model-router.service';
 
 @Injectable()
 export class AiService {
@@ -11,6 +13,8 @@ export class AiService {
     private configService: ConfigService,
     private prisma: PrismaService,
     private auditService: AuditService,
+    private browserService: BrowserService,
+    private modelRouterService: ModelRouterService,
   ) {}
 
   /**
@@ -88,6 +92,12 @@ export class AiService {
       prompt += `5. PRESENTATION MODE: When generating HTML templates for slides, ALWAYS use 'height: 100%;' instead of 'height: 100vh;' for the main container. NEVER use 'min-height' that exceeds 500px (the canvas is 540px tall). Ensure your layout fits perfectly inside a 16:9 ratio without causing scrollbars.\n`;
     }
 
+    if (context?.workspaceMemories) {
+      prompt += `\n\n--- WORKSPACE PERSISTENT MEMORIES & PREFERENCES ---\nThese are facts, preferences, decisions, or target configurations stored previously by the user. You MUST adhere to these targets (e.g. margin targets, corporate terms, slide styles):\n${context.workspaceMemories}\n-------------------------------------------------\n\n`;
+    }
+
+    prompt += `\n6. REAL-TIME SEARCH: You have access to tools 'webSearch' and 'webScrape'. Whenever the user asks about current events, news, recent pricing, stock metrics, financial reports of specific dates, or any information you do not have in your static training data, you MUST use 'webSearch' to find results, and then 'webScrape' on relevant URLs to extract the exact figures before formulating your response. Always cite the URLs you retrieved data from at the bottom of your response.\n`;
+
     return prompt;
   }
 
@@ -130,13 +140,94 @@ export class AiService {
   async chatStream(messages: any[], providerModelId: string, context?: any) {
     const model = await this.getModel(providerModelId);
     
+    // Fetch all workspace memories for the current workspace and inject as context
+    let enrichedContext = { ...context };
+    if (context?.workspaceId) {
+      try {
+        const memories = await this.prisma.workspaceMemory.findMany({
+          where: { workspaceId: context.workspaceId },
+          orderBy: { updatedAt: 'desc' }
+        });
+        if (memories && memories.length > 0) {
+          const memoryStr = memories.map(m => `[Memory: ${m.type}] key="${m.key}" value="${m.value}"`).join('\n');
+          enrichedContext.workspaceMemories = memoryStr;
+        }
+      } catch (e) {
+        this.logger.error('Failed to fetch workspace memories for context', e);
+      }
+    }
+
     // @ts-ignore
-    const { streamText } = await Function('return import("ai")')();
+    const { streamText, tool } = await Function('return import("ai")')();
+    // @ts-ignore
+    const { z } = await Function('return import("zod")')();
     
     const result = await streamText({
       model,
-      system: this.buildSystemPrompt(context),
+      system: this.buildSystemPrompt(enrichedContext),
       messages,
+      maxSteps: 5, // Allow multi-step tool execution for search + scrape
+      tools: {
+        webSearch: tool({
+          description: 'Search the web using DuckDuckGo/Wikipedia for real-time information.',
+          parameters: z.object({
+            query: z.string().describe('The search query to look up on the web.'),
+          }),
+          execute: async ({ query }: { query: string }) => {
+            this.logger.log(`Tool Execute: webSearch for "${query}"`);
+            const results = await this.browserService.search(query);
+            return { results };
+          },
+        }),
+        webScrape: tool({
+          description: 'Scrape and extract the text content of a specific web URL.',
+          parameters: z.object({
+            url: z.string().describe('The URL of the webpage to scrape.'),
+          }),
+          execute: async ({ url }: { url: string }) => {
+            this.logger.log(`Tool Execute: webScrape for "${url}"`);
+            const pageData = await this.browserService.scrapePage(url);
+            return { pageData };
+          },
+        }),
+        saveWorkspaceMemory: tool({
+          description: 'Save a specific workspace preference, fact, or recurring entity dynamically into memory.',
+          parameters: z.object({
+            type: z.enum(['preference', 'fact', 'entity', 'assumption', 'decision', 'template']).describe('Type of memory classification.'),
+            key: z.string().describe('The key mapping of the memory item (e.g. gross_margin_target, target_slide_count).'),
+            value: z.string().describe('The value content of the memory.'),
+          }),
+          execute: async ({ type, key, value }: { type: string, key: string, value: string }) => {
+            if (!context?.workspaceId) return { success: false, error: 'No active workspace context' };
+            this.logger.log(`Tool Execute: saveWorkspaceMemory [${type}] ${key} => ${value}`);
+            const memory = await this.prisma.workspaceMemory.create({
+              data: {
+                workspaceId: context.workspaceId,
+                type,
+                key,
+                value,
+                confidence: 1.0,
+              }
+            });
+            return { success: true, memoryId: memory.id };
+          },
+        }),
+        getWorkspaceMemory: tool({
+          description: 'Retrieve stored facts, preferences, or decisions from workspace memory using a key.',
+          parameters: z.object({
+            key: z.string().describe('The key of the memory to fetch.'),
+          }),
+          execute: async ({ key }: { key: string }) => {
+            if (!context?.workspaceId) return { results: [] };
+            this.logger.log(`Tool Execute: getWorkspaceMemory for key "${key}"`);
+            const memories = await this.prisma.workspaceMemory.findMany({
+              where: { workspaceId: context.workspaceId, key },
+              orderBy: { createdAt: 'desc' }
+            });
+            return { results: memories };
+          },
+        }),
+      },
       onFinish: async ({ usage }) => {
         if (context?.workspaceId) {
           try {
@@ -161,7 +252,17 @@ export class AiService {
     return result.toTextStreamResponse();
   }
 
-  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide', text: string, workspaceId?: string, userId?: string, documentId?: string) {
+  async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide' | 'browser_search' | 'browser_extract', text: string, workspaceId?: string, userId?: string, documentId?: string) {
+    // Check browser actions directly to skip document loading if irrelevant
+    if (action === 'browser_search') {
+      const results = await this.browserService.search(text);
+      return { result: JSON.stringify(results, null, 2) };
+    }
+    if (action === 'browser_extract') {
+      const pageData = await this.browserService.scrapePage(text);
+      return { result: JSON.stringify(pageData, null, 2) };
+    }
+
     if ((!text || text.trim() === "") && documentId) {
       // Fetch document chunks if text is empty
       const chunks = await this.prisma.documentChunk.findMany({
@@ -211,7 +312,18 @@ export class AiService {
       }
     }
 
-    const model = await this.getModel('openai:gpt-4o'); // Use default model for inline actions or extract from config
+    // Map inline actions to Model Router task classes
+    let taskType: 'rewrite' | 'summarization' | 'spreadsheet-reasoning' | 'general-chat' = 'general-chat';
+    if (action === 'rewrite' || action === 'grammar') taskType = 'rewrite';
+    if (action === 'summarize' || action === 'summarize_pdf') taskType = 'summarization';
+    if (action === 'generate_formula' || action === 'generate_table') taskType = 'spreadsheet-reasoning';
+
+    const routedModelId = await this.modelRouterService.selectModel({
+      taskType,
+      contextSize: text.length
+    });
+
+    const model = await this.getModel(routedModelId);
 
     // @ts-ignore
     const { generateText } = await Function('return import("ai")')();
@@ -265,24 +377,31 @@ export class AiService {
   /**
    * Vexius Agents
    */
-  async runAgent(agentType: 'financial-analyst' | 'legal-reviewer', documentId: string, workspaceId: string, userId: string, documentContent?: string) {
+    /**
+   * Vexius Agents
+   */
+  async runAgent(agentType: 'financial-analyst' | 'legal-reviewer' | 'deep-researcher', documentId: string, workspaceId: string, userId: string, documentContent?: string) {
     let text = documentContent || "";
     
-    if (!text || text.trim() === "") {
-      // 1. Fetch document chunks
-      const chunks = await this.prisma.documentChunk.findMany({
-        where: { documentId },
-        orderBy: { id: 'asc' }
-      });
+    // For deep-researcher, documentId might be temp, but we can bypass DB document check
+    let docName = "Web Query";
+    if (agentType !== 'deep-researcher') {
+      if (!text || text.trim() === "") {
+        const chunks = await this.prisma.documentChunk.findMany({
+          where: { documentId },
+          orderBy: { id: 'asc' }
+        });
 
-      if (!chunks || chunks.length === 0) {
-        throw new BadRequestException("Document has not been indexed yet or is empty.");
+        if (!chunks || chunks.length === 0) {
+          throw new BadRequestException("Document has not been indexed yet or is empty.");
+        }
+        text = chunks.map(c => c.content).join('\n\n');
       }
-      text = chunks.map(c => c.content).join('\n\n');
-    }
 
-    const doc = await this.prisma.document.findUnique({ where: { id: documentId }});
-    if (!doc) throw new BadRequestException("Document not found");
+      const doc = await this.prisma.document.findUnique({ where: { id: documentId }});
+      if (!doc) throw new BadRequestException("Document not found");
+      docName = doc.name;
+    }
 
     let prompt = "";
     let resultFileName = "";
@@ -290,16 +409,31 @@ export class AiService {
 
     if (agentType === 'financial-analyst') {
       systemPrompt = `You are a world-class Financial Analyst Agent.
-Your objective is to review the provided financial model or spreadsheet data (often in CSV format) and provide a concise, high-level financial analysis.
-If you find actionable insights, you may suggest updates to the model. To update a cell in the model, output a JSON block like:
+Your objective is to review the provided financial model or spreadsheet data (often in CSV or JSON 2D array format) and perform calculations:
+1. Verify formulas and check for standard errors like '#REF!', '#VALUE!', '#DIV/0!'. If found, write a validation alert.
+2. Build sensitivity analysis models (e.g. comparing growth rates, calculating margins, scenario comparison).
+3. If you find errors or decide to update the financial projections based on user assumptions, suggest updates to the model cells.
+To update a cell in the model, output a JSON block like:
 \`\`\`json
 { "action": "update_cell", "row": 0, "col": 1, "value": 5000 }
 \`\`\`
-Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid.`;
-      prompt = `Analyze the following data:
+Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid. Always summarize the final Net Profit, EBITDA, and Revenue trends.`;
+      
+      const errorsFound: string[] = [];
+      const dataLines = text.split('\n');
+      dataLines.forEach((line, rIndex) => {
+        if (line.includes('#REF!')) errorsFound.push(`Row ${rIndex + 1}: Formula references invalid cell (#REF!)`);
+        if (line.includes('#VALUE!')) errorsFound.push(`Row ${rIndex + 1}: Value type mismatch (#VALUE!)`);
+        if (line.includes('#DIV/0!')) errorsFound.push(`Row ${rIndex + 1}: Division by zero (#DIV/0!)`);
+      });
+
+      prompt = `Analyze the following sheet data. 
+${errorsFound.length > 0 ? `[VALIDATION ALERT] Found the following spreadsheet errors:\n${errorsFound.join('\n')}\n` : 'No obvious formula crashes detected. Validate all cell equations.'}
+
+Spreadsheet Data:
 ${text.substring(0, 50000)}
 `;
-      resultFileName = `Financial Analysis - ${doc.name}.md`;
+      resultFileName = `Financial Analysis - ${docName}.md`;
     } else if (agentType === 'legal-reviewer') {
       prompt = `You are an expert Legal Counsel. Review the following contract/document text.
 Identify any potential conflicts of interest, liabilities, missing standard clauses, or ambiguous terms.
@@ -308,7 +442,34 @@ Format the output as a professional Markdown document with clear headings and bu
 Text:
 ${text.substring(0, 50000)}
 `;
-      resultFileName = `Legal Review - ${doc.name}.md`;
+      resultFileName = `Legal Review - ${docName}.md`;
+    } else if (agentType === 'deep-researcher') {
+      this.logger.log(`Deep Researcher Agent started. Plan: Search web for "${text}"`);
+      // Step 1: Sequential Planning & Web Search
+      const searchResults = await this.browserService.search(text);
+      const topUrls = searchResults.slice(0, 3).map(r => r.link);
+      
+      // Step 2: Source collection & extraction
+      const pageContents: string[] = [];
+      for (const url of topUrls) {
+        try {
+          const scraped = await this.browserService.scrapePage(url);
+          pageContents.push(`SOURCE: ${url}\nTITLE: ${scraped.title}\nCONTENT EXCERPT: ${scraped.content.slice(0, 4000)}`);
+        } catch (e) {
+          this.logger.warn(`Failed to scrape source during Deep Research: ${url}`);
+        }
+      }
+
+      systemPrompt = `You are the Vexius Deep Researcher Agent.
+Your task is to synthesize the search queries and extracted page contents into a highly structured, source-backed markdown report.
+Ensure you cross-reference facts, note discrepancies, and list citations at the bottom. Do not use conversational filler.`;
+
+      prompt = `User Query: ${text}
+
+Here are the collected web references and facts to synthesize:
+${pageContents.join('\n\n')}
+`;
+      resultFileName = `Deep Research - ${text.slice(0, 20)}.md`;
     }
 
     const model = await this.getModel('openai:gpt-4o');
@@ -355,6 +516,26 @@ ${text.substring(0, 50000)}
         }
       }
     });
+
+    // Write structural ProvenanceRecord to AuditLog database
+    try {
+      await this.auditService.logAction(
+        workspaceId,
+        userId,
+        `AI_AGENT_EXECUTION_${agentType.toUpperCase().replace(/-/g, '_')}`,
+        createdDoc.id,
+        {
+          modelUsed: 'openai:gpt-4o',
+          tokensUsed: result.usage?.totalTokens || 0,
+          documentName: resultFileName,
+          verifiableSources: agentType === 'deep-researcher' ? 'Dynamic Scraper Hybrid Sources' : 'Context-Injected DB Reference',
+          systemPromptCitations: systemPrompt,
+          isAgentExecution: true
+        }
+      );
+    } catch (auditErr) {
+      this.logger.error('Failed to log provenance audit record', auditErr);
+    }
 
     return createdDoc;
   }

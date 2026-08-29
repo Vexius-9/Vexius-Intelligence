@@ -160,7 +160,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
 
             for (let r = 0; r < data2D.length; r++) {
               for (let c = 0; c < data2D[0].length; c++) {
-                let cellClass = 'ht-border-template';
+                let cellClass = '';
                 // Add header styling for the first row
                 if (r === 0) {
                   cellClass += ' htCenter htMiddle ht-header-bold';
@@ -220,7 +220,7 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
 
             for (let r = 0; r < parsedData.length; r++) {
               for (let c = 0; c < parsedData[0].length; c++) {
-                let cellClass = 'ht-border-template';
+                let cellClass = '';
                 if (r === 0) {
                   cellClass += ' htCenter htMiddle ht-header-bold';
                 }

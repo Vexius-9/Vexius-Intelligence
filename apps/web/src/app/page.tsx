@@ -16,26 +16,26 @@ export default function Home() {
     { 
       name: "Vexius Docs", 
       img: "/img/docs-v2.png", 
-      desc: "Collaborative word processing with real-time AI assistance.",
-      features: ["Live Multiplayer Editing", "AI Drafting & Summarization", "Markdown Support"]
+      desc: "Collaborative word processing with real-time AI assistance, custom agent actions, and Deep Research modes.",
+      features: ["Live Multiplayer Editing", "AI Drafting & Deep Research Synthesis", "Markdown Support", "Structural Provenance Logging"]
     },
     { 
       name: "Vexius Sheets", 
       img: "/img/sheet-v2.png", 
-      desc: "Powerful spreadsheets with AI-driven formulas and data analysis.",
-      features: ["AI Formula Generation", "Data Validation", "Large Dataset Support"]
+      desc: "Powerful spreadsheets with AI-driven formulas, error auditing, and target calculations.",
+      features: ["AI Formula Generation & Audit", "Cell Error Verification (#REF!)", "Scenario Comparison Modes", "Automatic Assumption Recalls"]
     },
     { 
       name: "Vexius Slides", 
       img: "/img/slides-v2.png", 
-      desc: "Dynamic presentations generated instantly from prompts.",
-      features: ["Prompt to Presentation", "Web3 Themes", "PDF Export"]
+      desc: "Dynamic presentations generated instantly from prompts using custom template styles.",
+      features: ["Prompt to Presentation", "Web3 Themes & Layout Adapters", "PDF Export"]
     },
     { 
       name: "Vexius PDF", 
       img: "/img/pdf-v2.png", 
       desc: "Secure PDF viewing, annotation, and cryptographic signatures.",
-      features: ["Digital Signatures", "Annotations", "High Fidelity Rendering"]
+      features: ["Digital Signatures", "Annotations", "High Fidelity Rendering", "Audit Log Records"]
     }
   ];
 
@@ -221,9 +221,9 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
               className="bento-box"
             >
-              <h3 className="text-bento-title">Dual-LLM Engine</h3>
+              <h3 className="text-bento-title">Smart Model Router</h3>
               <p className="text-bento-desc">
-                Powered by Vexius AI for complex reasoning. Smart routing optimizes for both cost and speed.
+                Dynamically select the optimal Vexius AI model depending on task complexity, latency targets, and context size.
               </p>
             </motion.div>
             
@@ -234,9 +234,48 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
               className="bento-box" style={{ gridColumn: "span 2" }}
             >
-              <h3 className="text-bento-title">Workspace Isolation</h3>
+              <h3 className="text-bento-title">Workspace Memory & RLS</h3>
               <p className="text-bento-desc">
-                Every document belongs to a strictly isolated workspace, ensuring complete separation of concerns and data privacy.
+                Store explicit targets, preferences, and board decisions. RLS policies guarantee total isolation of facts and documents at the DB level.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+              className="bento-box"
+            >
+              <h3 className="text-bento-title">Scheduled Automation</h3>
+              <p className="text-bento-desc">
+                Configure recurrent research routines and automated document generation templates utilizing our background Redis task queue.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+              className="bento-box"
+            >
+              <h3 className="text-bento-title">Verified Provenance</h3>
+              <p className="text-bento-desc">
+                Audit every document change dynamically. Keep track of what Vexius model executed what action, total tokens spent, and verified web sources.
+              </p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
+              className="bento-box" style={{ gridColumn: "span 2" }}
+            >
+              <h3 className="text-bento-title">Agent SDK & Marketplace</h3>
+              <p className="text-bento-desc">
+                Build custom agent plugins using the <code>@vexius/sdk</code> library. Publish manifests directly to the secure marketplace registry for others to load.
               </p>
             </motion.div>
           </div>

@@ -1,12 +1,12 @@
 import { Controller, Post, Body, Req, Res, UseGuards, Get, Query, BadRequestException } from '@nestjs/common';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { AiService } from './ai.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Readable } from 'stream';
 
 @Controller('ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(HybridAuthGuard)
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
@@ -58,7 +58,7 @@ export class AiController {
 
   @Post('inline-action')
   async inlineAction(
-    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide'; text?: string; workspaceId?: string; documentId?: string },
+    @Body() body: { action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide' | 'browser_search' | 'browser_extract'; text?: string; workspaceId?: string; documentId?: string },
     @Req() req: FastifyRequest
   ) {
     if (!body.action) {
@@ -103,5 +103,16 @@ export class AiController {
       throw new BadRequestException('documentId and workspaceId are required');
     }
     return this.aiService.runAgent('legal-reviewer', body.documentId, body.workspaceId, user.id);
+  }
+
+  @Post('agents/deep-researcher')
+  async runDeepResearcher(
+    @Body() body: { documentId: string; workspaceId: string; query: string },
+    @CurrentUser() user: any
+  ) {
+    if (!body.workspaceId || !body.query) {
+      throw new BadRequestException('workspaceId and query are required');
+    }
+    return this.aiService.runAgent('deep-researcher', body.documentId || 'temp-research-id', body.workspaceId, user.id, body.query);
   }
 }

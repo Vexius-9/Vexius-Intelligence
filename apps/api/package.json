@@ -13,11 +13,11 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:debug": "NODE_OPTIONS=--experimental-vm-modules node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.39",
@@ -41,13 +41,16 @@
     "axios": "^1.19.0",
     "bs58": "^4.0.1",
     "bullmq": "^6.1.2",
+    "cheerio": "^1.2.0",
     "fastify": "^5.12.0",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "officeparser": "^7.8.0",
     "passport": "^0.7.0",
+    "passport-custom": "^1.2.1",
     "passport-jwt": "^4.0.1",
     "pdf-parse": "^2.4.5",
+    "playwright-chromium": "^1.62.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "tweetnacl": "^1.0.3"

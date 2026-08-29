@@ -23,6 +23,8 @@ interface AICopilotProps {
   onAiEnd?: () => void;
 }
 
+import { AICopilotQuickSearch } from "./AICopilotQuickSearch";
+
 export function AICopilot({ documentContext, getCurrentSelection, getFullText, onApplyAction, onAiStart, onAiEnd }: AICopilotProps) {
   const [selectedModel, setSelectedModel] = useState<string>("deepseek:deepseek-chat");
   const [token, setToken] = useState<string>("");
@@ -260,7 +262,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%", justifyContent: "space-between" }}>
           <select 
             value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as "t1" | "t2")}
+            onChange={(e) => setSelectedModel(e.target.value)}
             style={{
               background: "rgba(168, 85, 247, 0.1)",
               border: "1px solid rgba(168, 85, 247, 0.2)",
@@ -286,6 +288,9 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
           </button>
         </div>
       </div>
+
+      {/* Quick Web Search Panel */}
+      <AICopilotQuickSearch token={token} />
 
       {/* Messages Area */}
       <div className="custom-scrollbar" style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "24px" }}>

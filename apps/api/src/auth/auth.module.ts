@@ -3,12 +3,15 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { SupabaseStrategy } from './supabase.strategy';
+import { ApiKeyStrategy } from './apikey.strategy';
 import { SolanaAuthService } from './solana-auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
+    PrismaModule,
     ConfigModule.forRoot(), // Setup env variables
     PassportModule.register({ defaultStrategy: 'supabase' }),
     JwtModule.registerAsync({
@@ -26,7 +29,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [SupabaseStrategy, SolanaAuthService],
+  providers: [SupabaseStrategy, ApiKeyStrategy, SolanaAuthService],
   exports: [PassportModule, JwtModule],
 })
 export class AuthModule {}
