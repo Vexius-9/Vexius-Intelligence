@@ -146,6 +146,15 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             // Because it's a template, we load it as the entire sheet content to make it clean
             hotInstance.loadData(data2D);
             
+            // Reset all cell meta classes to remove infinite old borders first
+            const totalRows = hotInstance.countRows();
+            const totalCols = hotInstance.countCols();
+            for (let r = 0; r < totalRows; r++) {
+              for (let c = 0; c < totalCols; c++) {
+                hotInstance.setCellMeta(r, c, 'className', '');
+              }
+            }
+
             for (let r = 0; r < data2D.length; r++) {
               for (let c = 0; c < data2D[0].length; c++) {
                 let cellClass = 'ht-border-template';
@@ -187,6 +196,15 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             setSheetData(parsedData);
             hotInstance.loadData(parsedData);
             
+            // Reset all cell meta classes to remove infinite old borders first
+            const totalRows = hotInstance.countRows();
+            const totalCols = hotInstance.countCols();
+            for (let r = 0; r < totalRows; r++) {
+              for (let c = 0; c < totalCols; c++) {
+                hotInstance.setCellMeta(r, c, 'className', '');
+              }
+            }
+
             for (let r = 0; r < parsedData.length; r++) {
               for (let c = 0; c < parsedData[0].length; c++) {
                 let cellClass = 'ht-border-template';
