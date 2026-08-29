@@ -524,6 +524,34 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
           </div>
         )}
 
+        {/* Quick Actions for Spreadsheet */}
+        {(documentContext?.documentType === 'spreadsheet' || documentContext?.documentType === 'xlsx') && (
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', paddingBottom: '4px' }}>
+            <button 
+              type="button"
+              onClick={handleRunFinancialAnalyst}
+              disabled={isLoading || isProcessingAction}
+              style={{
+                background: 'rgba(16, 185, 129, 0.1)',
+                color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                padding: '6px 12px',
+                borderRadius: '16px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <BarChart size={12} />
+              Audit Formulas
+            </button>
+          </div>
+        )}
+
         <form onSubmit={overrideHandleSubmit} style={{
           display: "flex",
           background: "var(--bg-primary)",
