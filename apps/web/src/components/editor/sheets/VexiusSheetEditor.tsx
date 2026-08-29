@@ -146,6 +146,9 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             // Because it's a template, we load it as the entire sheet content to make it clean
             hotInstance.loadData(data2D);
             
+            // Reset customBordersData state to prevent old borders from merging
+            setCustomBordersData([]);
+            
             // Reset all cell meta classes to remove infinite old borders first
             const totalRows = hotInstance.countRows();
             const totalCols = hotInstance.countCols();
@@ -165,6 +168,13 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                 hotInstance.setCellMeta(r, c, 'className', cellClass);
               }
             }
+            
+            // Clear borders plugin cache manually
+            const customBordersPlugin = hotInstance.getPlugin('customBorders');
+            if (customBordersPlugin) {
+              customBordersPlugin.clearBorders();
+            }
+            
             hotInstance.render();
 
             // Force a save to persist the new template
@@ -196,6 +206,9 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             setSheetData(parsedData);
             hotInstance.loadData(parsedData);
             
+            // Reset customBordersData state to prevent old borders from merging
+            setCustomBordersData([]);
+            
             // Reset all cell meta classes to remove infinite old borders first
             const totalRows = hotInstance.countRows();
             const totalCols = hotInstance.countCols();
@@ -214,6 +227,13 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                 hotInstance.setCellMeta(r, c, 'className', cellClass);
               }
             }
+            
+            // Clear borders plugin cache manually
+            const customBordersPlugin = hotInstance.getPlugin('customBorders');
+            if (customBordersPlugin) {
+              customBordersPlugin.clearBorders();
+            }
+            
             hotInstance.render();
             
             setTimeout(() => {
