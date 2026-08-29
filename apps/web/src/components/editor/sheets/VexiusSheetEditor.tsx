@@ -587,9 +587,9 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             {floatingMenu.visible && (
               <div style={{
                 position: 'absolute',
-                top: floatingMenu.top,
-                left: floatingMenu.left,
-                zIndex: 99999,
+                top: Math.max(8, floatingMenu.top), // Prevent pushing under or over headers
+                left: Math.max(8, floatingMenu.left),
+                zIndex: 999999, // Ensure it is above the Handsontable layers and headers
                 background: '#fff',
                 border: '1px solid #ccc',
                 padding: '4px',
