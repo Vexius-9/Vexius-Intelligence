@@ -554,9 +554,12 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                       if (customBordersPlugin) {
                                         const endRow = r + shiftedTableData.length - 1;
                                         const endCol = c + shiftedTableData[0].length - 1;
+                                        const borderSettings: any[] = [];
                                         for (let currR = r; currR <= endRow; currR++) {
                                           for (let currC = c; currC <= endCol; currC++) {
-                                            customBordersPlugin.setBorders([[currR, currC, currR, currC]], {
+                                            borderSettings.push({
+                                              row: currR,
+                                              col: currC,
                                               top: { width: 1, color: '#000' },
                                               start: { width: 1, color: '#000' },
                                               bottom: { width: 1, color: '#000' },
@@ -564,6 +567,9 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                             });
                                           }
                                         }
+                                        // Update state to persist across renders
+                                        setCustomBordersData(borderSettings);
+                                        customBordersPlugin.setBorders(borderSettings);
                                         hotInst.render();
                                       }
                                     }
@@ -579,7 +585,10 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                                 
                                 setFloatingMenu({ ...floatingMenu, visible: false, aiMode: false });
                                 inputTarget.value = '';
-                                window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+                                // Delay slightly to ensure state is updated before save
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+                                }, 100);
                               }
                             }
                           } catch (err) {
