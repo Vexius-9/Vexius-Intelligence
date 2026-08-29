@@ -245,7 +245,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
-              className="bento-box"
+              className="bento-box" style={{ gridColumn: "span 2" }}
             >
               <h3 className="text-bento-title">Scheduled Automation</h3>
               <p className="text-bento-desc">
@@ -271,7 +271,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
-              className="bento-box" style={{ gridColumn: "span 2" }}
+              className="bento-box" style={{ gridColumn: "span 3" }}
             >
               <h3 className="text-bento-title">Agent SDK & Marketplace</h3>
               <p className="text-bento-desc">
