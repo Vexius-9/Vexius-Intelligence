@@ -166,12 +166,36 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
           }
         }
 
-        // 2. Fallback to single cell update via JSON
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/{[\s\S]*?}/);
+        // 2. Try to parse JSON 2D array for templates
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\[\s*\[[\s\S]*?\]\s*\]/) || text.match(/{[\s\S]*?}/);
         if (jsonMatch) {
-          const payload = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-          if (payload.action === 'update_cell' && typeof payload.row === 'number' && typeof payload.col === 'number') {
-            hotInstance.setDataAtCell(payload.row, payload.col, payload.value);
+          const parsedData = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+          
+          // Case 2a: Raw 2D Array template
+          if (Array.isArray(parsedData) && Array.isArray(parsedData[0])) {
+            setSheetData(parsedData);
+            hotInstance.loadData(parsedData);
+            
+            for (let r = 0; r < parsedData.length; r++) {
+              for (let c = 0; c < parsedData[0].length; c++) {
+                let cellClass = 'ht-border-template';
+                if (r === 0) {
+                  cellClass += ' htCenter htMiddle ht-header-bold';
+                }
+                hotInstance.setCellMeta(r, c, 'className', cellClass);
+              }
+            }
+            hotInstance.render();
+            
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+            }, 500);
+            return;
+          }
+          
+          // Case 2b: Single cell update payload
+          if (parsedData.action === 'update_cell' && typeof parsedData.row === 'number' && typeof parsedData.col === 'number') {
+            hotInstance.setDataAtCell(parsedData.row, parsedData.col, parsedData.value);
           }
         }
       } catch (e) {
