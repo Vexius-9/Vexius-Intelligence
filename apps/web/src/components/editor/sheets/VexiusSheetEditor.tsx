@@ -167,10 +167,20 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
         }
 
         // 2. Try to parse JSON 2D array for templates
-        // We match codeblocks first, or a text that strictly contains a valid JSON array or object structure
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/^[\s\n]*(\[[\s\S]*\])[\s\n]*$/) || text.match(/^[\s\n]*(\{[\s\S]*\})[\s\n]*$/);
-        if (jsonMatch) {
-          const parsedData = JSON.parse(jsonMatch[1] || jsonMatch[0].trim());
+        // We look for any JSON code blocks first, then try to match any valid JSON array pattern within the text.
+        let jsonMatchStr = "";
+        const codeBlockMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        if (codeBlockMatch) {
+          jsonMatchStr = codeBlockMatch[1];
+        } else {
+          const arrayMatch = text.match(/\[\s*\[[\s\S]*?\]\s*\]/);
+          if (arrayMatch) {
+            jsonMatchStr = arrayMatch[0];
+          }
+        }
+
+        if (jsonMatchStr) {
+          const parsedData = JSON.parse(jsonMatchStr.trim());
           
           // Case 2a: Raw 2D Array template
           if (Array.isArray(parsedData) && Array.isArray(parsedData[0])) {
