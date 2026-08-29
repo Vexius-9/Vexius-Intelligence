@@ -418,13 +418,27 @@ To update a cell in the model, output a JSON block like:
 { "action": "update_cell", "row": 0, "col": 1, "value": 5000 }
 \`\`\`
 Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid. Always summarize the final Net Profit, EBITDA, and Revenue trends.`;
-      
       const errorsFound: string[] = [];
       const dataLines = text.split('\n');
       dataLines.forEach((line, rIndex) => {
-        if (line.includes('#REF!')) errorsFound.push(`Row ${rIndex + 1}: Formula references invalid cell (#REF!)`);
-        if (line.includes('#VALUE!')) errorsFound.push(`Row ${rIndex + 1}: Value type mismatch (#VALUE!)`);
-        if (line.includes('#DIV/0!')) errorsFound.push(`Row ${rIndex + 1}: Division by zero (#DIV/0!)`);
+        // Parse CSV fields by splitting commas
+        const cells = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+        cells.forEach((cellVal, cIndex) => {
+          const cleanVal = cellVal.replace(/^"|"$/g, '').trim();
+          const colLetter = String.fromCharCode(65 + cIndex);
+          const cellCoord = `${colLetter}${rIndex + 1}`;
+          
+          if (cleanVal.includes('#REF!')) errorsFound.push(`Cell ${cellCoord}: Formula references invalid cell (#REF!)`);
+          if (cleanVal.includes('#VALUE!')) errorsFound.push(`Cell ${cellCoord}: Value type mismatch (#VALUE!)`);
+          if (cleanVal.includes('#DIV/0!')) errorsFound.push(`Cell ${cellCoord}: Division by zero (#DIV/0!)`);
+          if (cleanVal.includes('#NAME?')) errorsFound.push(`Cell ${cellCoord}: Invalid function name (#NAME?)`);
+          if (cleanVal.includes('#CYCLE!') || cleanVal.toLowerCase().includes('cycle') || cleanVal.toLowerCase().includes('circular')) {
+            errorsFound.push(`Cell ${cellCoord}: Circular reference dependency loop detected (#CYCLE!)`);
+          }
+          if (cleanVal.includes('#N/A')) errorsFound.push(`Cell ${cellCoord}: Value not available (#N/A)`);
+          if (cleanVal.includes('#NUM!')) errorsFound.push(`Cell ${cellCoord}: Numeric error (#NUM!)`);
+          if (cleanVal.includes('#NULL!')) errorsFound.push(`Cell ${cellCoord}: Null reference error (#NULL!)`);
+        });
       });
 
       prompt = `Analyze the following sheet data. 
@@ -537,6 +551,9 @@ ${pageContents.join('\n\n')}
       this.logger.error('Failed to log provenance audit record', auditErr);
     }
 
-    return createdDoc;
+    return {
+      ...createdDoc,
+      result: markdownContent
+    };
   }
 }

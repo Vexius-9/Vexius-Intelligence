@@ -517,6 +517,30 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                 formulas={{
                   engine: hfInstance,
                 }}
+                cells={function(row, col) {
+                  const cellProperties: any = {};
+                  cellProperties.renderer = function(instance: any, td: HTMLTableCellElement, r: number, c: number, prop: any, value: any, cellProperties: any) {
+                    // Call base text renderer
+                    Handsontable.renderers.TextRenderer.apply(this, [instance, td, r, c, prop, value, cellProperties]);
+                    
+                    const strVal = value !== null && value !== undefined ? String(value) : '';
+                    if (strVal.includes('#REF!') || strVal.includes('#DIV/0!') || strVal.includes('#VALUE!') || strVal.includes('#NAME?') || strVal.includes('#CYCLE!') || strVal.includes('#N/A') || strVal.includes('#NUM!') || strVal.includes('#NULL!')) {
+                      td.style.background = 'rgba(239, 68, 68, 0.15)'; // Transparent soft red
+                      td.style.color = '#b91c1c'; // Darker red text
+                      td.style.fontWeight = 'bold';
+                      td.title = `Formula Error detected: ${strVal}`;
+                    } else {
+                      // Reset styling if it was corrected
+                      if (td.style.background === 'rgba(239, 68, 68, 0.15)' || td.style.background.includes('239, 68, 68')) {
+                        td.style.background = '';
+                        td.style.color = '';
+                        td.style.fontWeight = '';
+                        td.removeAttribute('title');
+                      }
+                    }
+                  };
+                  return cellProperties;
+                }}
                 minRows={100}
                 minCols={26}
                 minSpareRows={1}
