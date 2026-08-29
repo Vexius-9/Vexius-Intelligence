@@ -21,7 +21,12 @@ export class AiService {
    * Resolve model provider dynamically using dynamic imports for ESM compatibility.
    */
   private async getModel(providerModelId: string) {
-    const [provider, modelId] = providerModelId.split(':');
+    // Split only on the FIRST colon to allow model IDs with dots (e.g. 'xai:grok-4.3')
+    const colonIdx = providerModelId.indexOf(':');
+    const provider = colonIdx !== -1 ? providerModelId.slice(0, colonIdx) : providerModelId;
+    const modelId = colonIdx !== -1 ? providerModelId.slice(colonIdx + 1) : '';
+    
+    this.logger.log(`[ModelResolver] Provider: "${provider}", ModelId: "${modelId}"`);
     
     // @ts-ignore
     const { createOpenAI } = await Function('return import("@ai-sdk/openai")')();
@@ -38,7 +43,10 @@ export class AiService {
         baseURL: this.configService.get('LLM_T2_BASE_URL') || 'https://api.x.ai/v1',
         apiKey: this.configService.get('LLM_T2_API_KEY'),
       });
-      return xai(modelId || this.configService.get('LLM_T2_MODEL') || 'grok-4.3');
+      const resolvedModelId = modelId || this.configService.get('LLM_T2_MODEL') || 'grok-4.3';
+      // grok-4.3 is a reasoning model — pass sendReasoningTokens so the AI SDK
+      // properly streams the final 'content' field (not just reasoning_content).
+      return xai(resolvedModelId, { sendReasoningTokens: true });
     } 
     
     if (provider === 'deepseek' || provider === 't1') {
@@ -255,6 +263,13 @@ export class AiService {
   async executeInlineAction(action: 'rewrite' | 'summarize' | 'grammar' | 'generate_formula' | 'generate_table' | 'explain_formula' | 'slide_structure' | 'summarize_pdf' | 'text_to_bullets' | 'speaker_notes' | 'generate_slide' | 'browser_search' | 'browser_extract', text: string, workspaceId?: string, userId?: string, documentId?: string) {
     // Check browser actions directly to skip document loading if irrelevant
     if (action === 'browser_search') {
+      // Auto-detect: if the input looks like a URL, scrape it instead of searching
+      const isUrl = /^https?:\/\/.+/i.test(text.trim());
+      if (isUrl) {
+        this.logger.log(`[browser_search] Input detected as URL — routing to scrapePage: ${text}`);
+        const pageData = await this.browserService.scrapePage(text.trim());
+        return { result: JSON.stringify(pageData, null, 2) };
+      }
       const results = await this.browserService.search(text);
       return { result: JSON.stringify(results, null, 2) };
     }

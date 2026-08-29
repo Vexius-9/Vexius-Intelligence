@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle, BarChart } from "lucide-react";
+import { Send, Bot, Sparkles, ChevronDown, Edit3, Type, CheckCircle, BarChart, Search, BookOpen } from "lucide-react";
 import { useChat } from "ai/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -30,6 +30,8 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
   const [token, setToken] = useState<string>("");
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [cachedSelection, setCachedSelection] = useState<string>("");
+  const [deepResearchSteps, setDeepResearchSteps] = useState<{label: string; done: boolean}[]>([]);
+  const [isDeepResearching, setIsDeepResearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,13 +60,18 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
     headers: {
       "Authorization": `Bearer ${token}`
     },
+    // NOTE: body here is static at init time — we override it dynamically in overrideHandleSubmit below
     body: {
       model: selectedModel,
       context: documentContext
     },
     initialMessages: [
       { id: "1", role: "assistant", content: "I am Vexius Intelligence. How can I help you today?" }
-    ]
+    ],
+    onError: (error) => {
+      console.error('[AICopilot] useChat error:', error);
+      toast.error(`AI Error: ${error.message || 'Unknown error'}`);
+    }
   });
 
   useEffect(() => {
@@ -195,6 +202,95 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
     }
   };
 
+  const handleDeepResearch = async (query?: string) => {
+    const researchQuery = query || input.trim();
+    if (!researchQuery) {
+      toast.error('Please enter a research topic first.');
+      return;
+    }
+    if (!documentContext?.workspaceId) {
+      toast.error('Open a workspace document first to use Deep Research.');
+      return;
+    }
+
+    // Add user message to chat
+    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: researchQuery }]);
+
+    const steps = [
+      { label: 'Planning research strategy...', done: false },
+      { label: 'Searching the web for sources...', done: false },
+      { label: 'Extracting & reading sources...', done: false },
+      { label: 'Synthesizing findings & citations...', done: false },
+      { label: 'Writing structured report...', done: false },
+    ];
+
+    setDeepResearchSteps([...steps]);
+    setIsDeepResearching(true);
+    if (onAiStart) onAiStart();
+
+    // Animate steps progressively as the backend works
+    const stepTimings = [600, 3000, 8000, 18000, 25000];
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    stepTimings.forEach((delay, i) => {
+      const t = setTimeout(() => {
+        setDeepResearchSteps(prev => prev.map((s, idx) => idx === i ? { ...s, done: true } : s));
+      }, delay);
+      timeouts.push(t);
+    });
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/ai/agents/deep-researcher`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          workspaceId: documentContext.workspaceId,
+          documentId: documentContext.documentId || 'temp',
+          query: researchQuery
+        })
+      });
+
+      // Clear pending timers
+      timeouts.forEach(clearTimeout);
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Deep Research failed');
+      }
+
+      const data = await res.json();
+
+      // Mark all steps done
+      setDeepResearchSteps(prev => prev.map(s => ({ ...s, done: true })));
+
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `**🔬 Deep Research Report**\n\n${data.result}\n\n---\n*Report saved to your workspace as a document.*`
+        }]);
+        setIsDeepResearching(false);
+        setDeepResearchSteps([]);
+        if (onAiEnd) onAiEnd();
+      }, 800);
+    } catch (err: any) {
+      timeouts.forEach(clearTimeout);
+      console.error('[DeepResearch]', err);
+      toast.error(`Deep Research failed: ${err.message}`);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `❌ Deep Research encountered an error: ${err.message}`
+      }]);
+      setIsDeepResearching(false);
+      setDeepResearchSteps([]);
+      if (onAiEnd) onAiEnd();
+    }
+  };
+
   const overrideHandleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (getCurrentSelection) {
@@ -209,7 +305,14 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         documentContext.documentContent = fullText;
       }
     }
-    handleSubmit(e);
+    // Inject the CURRENT selectedModel into the request body dynamically,
+    // because useChat's body is static and doesn't react to state changes.
+    handleSubmit(e, {
+      body: {
+        model: selectedModel,
+        context: documentContext
+      }
+    });
   };
 
   useEffect(() => {
@@ -277,7 +380,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             }}
           >
             <option value="openai:gpt-4o">Vexius General</option>
-            <option value="xai:grok-beta">Vexius Creative</option>
+            <option value="xai:grok-4.3">Vexius Creative</option>
             <option value="deepseek:deepseek-chat">Vexius Reasoning</option>
           </select>
           <button 
@@ -415,7 +518,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             </div>
           </div>
         ))}
-        {(isLoading || isProcessingAction) && (
+        {(isLoading || isProcessingAction) && !isDeepResearching && (
           <div style={{ display: "flex", gap: "12px" }}>
             <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                <Sparkles size={12} color="#000" />
@@ -425,12 +528,67 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             </div>
           </div>
         )}
+        {isDeepResearching && deepResearchSteps.length > 0 && (
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <BookOpen size={12} color="#fff" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '8px', letterSpacing: '0.05em' }}>DEEP RESEARCH IN PROGRESS</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {deepResearchSteps.map((step, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
+                    <div style={{
+                      width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
+                      background: step.done ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+                      border: `1.5px solid ${step.done ? '#10b981' : 'rgba(148, 163, 184, 0.3)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.4s ease'
+                    }}>
+                      {step.done
+                        ? <CheckCircle size={10} color="#10b981" />
+                        : i === deepResearchSteps.findIndex(s => !s.done)
+                          ? <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 1s infinite' }} />
+                          : null
+                      }
+                    </div>
+                    <span style={{
+                      color: step.done ? 'var(--text-primary)' : i === deepResearchSteps.findIndex(s => !s.done) ? '#a78bfa' : 'var(--text-secondary)',
+                      fontWeight: step.done ? 500 : i === deepResearchSteps.findIndex(s => !s.done) ? 600 : 400,
+                      transition: 'all 0.3s ease'
+                    }}>{step.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)" }}>
         
+        {/* Deep Research button — always visible in input area */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <button
+            onClick={() => handleDeepResearch()}
+            disabled={isLoading || isProcessingAction || isDeepResearching || !input.trim()}
+            title="Run multi-step deep web research on your query"
+            style={{
+              background: input.trim() ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))' : 'rgba(148, 163, 184, 0.05)',
+              color: input.trim() ? '#818cf8' : 'var(--text-secondary)',
+              border: `1px solid ${input.trim() ? 'rgba(99, 102, 241, 0.3)' : 'var(--border-color)'}`,
+              padding: '5px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: 600,
+              cursor: (isLoading || isProcessingAction || isDeepResearching || !input.trim()) ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '5px',
+              transition: 'all 0.2s ease', whiteSpace: 'nowrap'
+            }}
+          >
+            <BookOpen size={11} /> Deep Research
+          </button>
+        </div>
+
         {/* Quick Actions for Presentation */}
         {documentContext?.documentType === 'presentation' && (
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', paddingBottom: '4px' }}>

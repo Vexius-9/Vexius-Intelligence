@@ -44,7 +44,7 @@ export class BrowserService {
 
       const $ = cheerio.load(response.data);
       const results: SearchResult[] = [];
-
+ 
       $('table.result-table').each((_, element) => {
         const linkEl = $(element).find('td.result-link a');
         const snippetEl = $(element).next('tr').find('td.result-snippet');
