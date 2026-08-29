@@ -18,7 +18,7 @@ import 'handsontable/styles/ht-theme-main.min.css';
 import Handsontable from 'handsontable';
 
 import { VexiusSheetRibbon } from './VexiusSheetRibbon';
-import { FunctionSquare, Grid, PaintBucket, Sparkles, Trash2 } from 'lucide-react';
+import { FunctionSquare, Grid, PaintBucket, Sparkles, Trash2, Wrench } from 'lucide-react';
 
 export interface VexiusSheetEditorProps {
   documentId: string;
@@ -93,112 +93,91 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     }
   }, [initialContent]);
 
-  useImperativeHandle(ref, () => ({
-    getFullText: () => {
-      const hotInstance = hotRef.current?.hotInstance;
-      if (!hotInstance) return "";
-      
-      const data = hotInstance.getData();
-      // Format as CSV for LLM readability
-      let csv = "Col A, Col B, Col C, Col D, Col E, Col F\n"; // Headers roughly
-      for (let r = 0; r < Math.min(data.length, 30); r++) {
-        csv += data[r].map((cell: any) => `"${cell || ''}"`).join(",") + "\n";
-      }
-      return csv;
-    },
-    getCurrentSelection: () => {
-      const hotInstance = hotRef.current?.hotInstance;
-      if (!hotInstance) return "";
-      const selected = hotInstance.getSelected(); // [[row, col, row2, col2]]
-      if (selected && selected.length > 0) {
-        return `Selected Cell: Row ${selected[0][0]}, Col ${selected[0][1]}`;
-      }
-      return "";
-    },
-    applyAction: (text: string) => {
-      const hotInstance = hotRef.current?.hotInstance;
-      if (!hotInstance) return;
-      
-      try {
-        // 1. Try to parse Markdown Table for templates
-        const lines = text.split('\n');
-        const tableLines = lines.filter(line => line.trim().startsWith('|') && line.trim().endsWith('|'));
-        if (tableLines.length > 0) {
-          const data2D = [];
-          for (const line of tableLines) {
-            // Ignore separator lines like |---|---|
-            if (line.match(/^\|[\s\-\|:]+\|$/)) continue;
-            const cols = line.split('|').slice(1, -1).map(c => {
-              let val = c.trim();
-              // Remove markdown bold (**) and italic (*) 
-              val = val.replace(/\*\*(.*?)\*\*/g, '$1');
-              val = val.replace(/\*(.*?)\*/g, '$1');
-              val = val.replace(/__(.*?)__/g, '$1');
-              val = val.replace(/_(.*?)_/g, '$1');
-              return val;
-            });
-            data2D.push(cols);
+  const applyAction = useCallback((text: string) => {
+    const hotInstance = hotRef.current?.hotInstance;
+    if (!hotInstance) return;
+    
+    try {
+      // 1. Try to parse Markdown Table for templates
+      const lines = text.split('\n');
+      const tableLines = lines.filter(line => line.trim().startsWith('|') && line.trim().endsWith('|'));
+      if (tableLines.length > 0) {
+        const data2D = [];
+        for (const line of tableLines) {
+          // Ignore separator lines like |---|---|
+          if (line.match(/^\|[\s\-\|:]+\|$/)) continue;
+          const cols = line.split('|').slice(1, -1).map(c => {
+            let val = c.trim();
+            // Remove markdown bold (**) and italic (*) 
+            val = val.replace(/\*\*(.*?)\*\*/g, '$1');
+            val = val.replace(/\*(.*?)\*/g, '$1');
+            val = val.replace(/__(.*?)__/g, '$1');
+            val = val.replace(/_(.*?)_/g, '$1');
+            return val;
+          });
+          data2D.push(cols);
+        }
+        
+        if (data2D.length > 0) {
+          // Update state so re-renders don't reset the grid
+          setSheetData(data2D);
+          // Because it's a template, we load it as the entire sheet content to make it clean
+          hotInstance.loadData(data2D);
+          
+          // Reset customBordersData state to prevent old borders from merging
+          setCustomBordersData([]);
+          
+          // Reset all cell meta classes to remove infinite old borders first
+          const totalRows = hotInstance.countRows();
+          const totalCols = hotInstance.countCols();
+          for (let r = 0; r < totalRows; r++) {
+            for (let c = 0; c < totalCols; c++) {
+              hotInstance.setCellMeta(r, c, 'className', '');
+            }
+          }
+
+          for (let r = 0; r < data2D.length; r++) {
+            for (let c = 0; c < data2D[0].length; c++) {
+              let cellClass = '';
+              // Add header styling for the first row
+              if (r === 0) {
+                cellClass += ' htCenter htMiddle ht-header-bold';
+              }
+              hotInstance.setCellMeta(r, c, 'className', cellClass);
+            }
           }
           
-          if (data2D.length > 0) {
-            // Update state so re-renders don't reset the grid
-            setSheetData(data2D);
-            // Because it's a template, we load it as the entire sheet content to make it clean
-            hotInstance.loadData(data2D);
-            
-            // Reset customBordersData state to prevent old borders from merging
-            setCustomBordersData([]);
-            
-            // Reset all cell meta classes to remove infinite old borders first
-            const totalRows = hotInstance.countRows();
-            const totalCols = hotInstance.countCols();
-            for (let r = 0; r < totalRows; r++) {
-              for (let c = 0; c < totalCols; c++) {
-                hotInstance.setCellMeta(r, c, 'className', '');
-              }
-            }
-
-            for (let r = 0; r < data2D.length; r++) {
-              for (let c = 0; c < data2D[0].length; c++) {
-                let cellClass = '';
-                // Add header styling for the first row
-                if (r === 0) {
-                  cellClass += ' htCenter htMiddle ht-header-bold';
-                }
-                hotInstance.setCellMeta(r, c, 'className', cellClass);
-              }
-            }
-            
-            // Clear borders plugin cache manually
-            const customBordersPlugin = hotInstance.getPlugin('customBorders');
-            if (customBordersPlugin) {
-              customBordersPlugin.clearBorders();
-            }
-            
-            hotInstance.render();
-
-            // Force a save to persist the new template
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
-            }, 500);
-            return;
+          // Clear borders plugin cache manually
+          const customBordersPlugin = hotInstance.getPlugin('customBorders');
+          if (customBordersPlugin) {
+            customBordersPlugin.clearBorders();
           }
-        }
+          
+          hotInstance.render();
 
-        // 2. Try to parse JSON 2D array for templates
-        // We look for any JSON code blocks first, then try to match any valid JSON array pattern within the text.
-        let jsonMatchStr = "";
-        const codeBlockMatch = text.match(/```json\n([\s\S]*?)\n```/);
-        if (codeBlockMatch) {
-          jsonMatchStr = codeBlockMatch[1];
-        } else {
-          const arrayMatch = text.match(/\[\s*\[[\s\S]*?\]\s*\]/);
-          if (arrayMatch) {
-            jsonMatchStr = arrayMatch[0];
-          }
+          // Force a save to persist the new template
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+          }, 500);
+          return;
         }
+      }
 
-        if (jsonMatchStr) {
+      // 2. Try to parse JSON 2D array for templates
+      // We look for any JSON code blocks first, then try to match any valid JSON array pattern within the text.
+      let jsonMatchStr = "";
+      const codeBlockMatch = text.match(/```json\n([\s\S]*?)\n```/);
+      if (codeBlockMatch) {
+        jsonMatchStr = codeBlockMatch[1];
+      } else {
+        const arrayMatch = text.match(/\[\s*\[[\s\S]*?\]\s*\]/);
+        if (arrayMatch) {
+          jsonMatchStr = arrayMatch[0];
+        }
+      }
+
+      if (jsonMatchStr) {
+        try {
           const parsedData = JSON.parse(jsonMatchStr.trim());
           
           // Case 2a: Raw 2D Array template
@@ -241,51 +220,72 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             }, 500);
             return;
           }
-          
-          // Case 2b: Multi-block or Single-block JSON extraction
-          // Scan for multiple JSON blocks in case the AI generated multiple corrections
-          const jsonBlocks = [];
-          const regex = /\{[\s\S]*?\}/g;
-          let match;
-          while ((match = regex.exec(text)) !== null) {
-            try {
-              const parsedBlock = JSON.parse(match[0].trim());
-              if (parsedBlock && typeof parsedBlock === 'object') {
-                jsonBlocks.push(parsedBlock);
-              }
-            } catch (blockErr) {
-              // skip non-json segments that matched braces
-            }
-          }
-
-          if (jsonBlocks.length > 0) {
-            let hasUpdated = false;
-            jsonBlocks.forEach((block) => {
-              if (block.action === 'update_cell' && typeof block.row === 'number' && typeof block.col === 'number') {
-                hotInstance.setDataAtCell(block.row, block.col, block.value);
-                hasUpdated = true;
-              }
-            });
-            if (hasUpdated) {
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
-              }, 500);
-              return;
-            }
-          }
-
-          // Case 2c: Fallback raw parsedData
-          if (parsedData.action === 'update_cell' && typeof parsedData.row === 'number' && typeof parsedData.col === 'number') {
-            hotInstance.setDataAtCell(parsedData.row, parsedData.col, parsedData.value);
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
-            }, 500);
-          }
+        } catch (e) {
+          // If main block parse fails, we fallback to parsing inline JSON chunks below
         }
-      } catch (e) {
-        console.error("Failed to parse applyAction payload for sheets", e);
       }
+      
+      // Case 2b: Multi-block or Single-block JSON extraction
+      // Scan for multiple JSON blocks in case the AI generated multiple corrections
+      const jsonBlocks = [];
+      const regex = /\{[\s\S]*?\}/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          const parsedBlock = JSON.parse(match[0].trim());
+          if (parsedBlock && typeof parsedBlock === 'object') {
+            jsonBlocks.push(parsedBlock);
+          }
+        } catch (blockErr) {
+          // skip non-json segments that matched braces
+        }
+      }
+
+      if (jsonBlocks.length > 0) {
+        let hasUpdated = false;
+        jsonBlocks.forEach((block) => {
+          if (block.action === 'update_cell' && typeof block.row === 'number' && typeof block.col === 'number') {
+            hotInstance.setDataAtCell(block.row, block.col, block.value);
+            hasUpdated = true;
+          }
+        });
+        if (hasUpdated) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+          }, 500);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse applyAction payload for sheets", e);
     }
+  }, []);
+
+  const getFullText = useCallback(() => {
+    const hotInstance = hotRef.current?.hotInstance;
+    if (!hotInstance) return "";
+    
+    const data = hotInstance.getSourceData(); // Use getSourceData to fetch raw formulas (e.g. =B6C6) instead of evaluated values
+    // Format as CSV for LLM readability, starting from Row 1 directly (no manual header line)
+    let csv = "";
+    for (let r = 0; r < Math.min(data.length, 30); r++) {
+      csv += data[r].map((cell: any) => `"${cell || ''}"`).join(",") + "\n";
+    }
+    return csv;
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    getFullText,
+    getCurrentSelection: () => {
+      const hotInstance = hotRef.current?.hotInstance;
+      if (!hotInstance) return "";
+      const selected = hotInstance.getSelected(); // [[row, col, row2, col2]]
+      if (selected && selected.length > 0) {
+        return `Selected Cell: Row ${selected[0][0]}, Col ${selected[0][1]}`;
+      }
+      return "";
+    },
+    applyAction
   }));
 
   const saveContent = async (hotInstance: any) => {
@@ -370,9 +370,11 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
     const val = hotInst.getSourceDataAtCell(r, c);
     setFormulaValue(val === null || val === undefined ? '' : String(val));
 
-    // Show floating toolbar for multi-cell selections
+    const strVal = val !== null && val !== undefined ? String(val) : '';
+    const hasError = strVal.includes('#REF!') || strVal.includes('#DIV/0!') || strVal.includes('#VALUE!') || strVal.includes('#NAME?') || strVal.includes('#CYCLE!') || strVal.includes('#N/A') || strVal.includes('#NUM!') || strVal.includes('#NULL!');
     const isMultiCell = r !== r2 || c !== c2;
-    if (isMultiCell) {
+    
+    if (isMultiCell || hasError) {
       setTimeout(() => {
         const currentHotInst = hotRef.current?.hotInstance;
         if (!currentHotInst) return;
@@ -558,20 +560,21 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                     // Call base text renderer
                     Handsontable.renderers.TextRenderer.apply(this, [instance, td, r, c, prop, value, cellProperties]);
                     
+                    // Check if cell is currently in edit mode to avoid blocking input readability
+                    const isEditing = instance.getActiveEditor() && instance.getActiveEditor().row === r && instance.getActiveEditor().col === c;
+                    
                     const strVal = value !== null && value !== undefined ? String(value) : '';
-                    if (strVal.includes('#REF!') || strVal.includes('#DIV/0!') || strVal.includes('#VALUE!') || strVal.includes('#NAME?') || strVal.includes('#CYCLE!') || strVal.includes('#N/A') || strVal.includes('#NUM!') || strVal.includes('#NULL!')) {
+                    if (!isEditing && (strVal.includes('#REF!') || strVal.includes('#DIV/0!') || strVal.includes('#VALUE!') || strVal.includes('#NAME?') || strVal.includes('#CYCLE!') || strVal.includes('#N/A') || strVal.includes('#NUM!') || strVal.includes('#NULL!'))) {
                       td.style.background = 'rgba(239, 68, 68, 0.15)'; // Transparent soft red
                       td.style.color = '#b91c1c'; // Darker red text
                       td.style.fontWeight = 'bold';
                       td.title = `Formula Error detected: ${strVal}`;
                     } else {
-                      // Reset styling if it was corrected
-                      if (td.style.background === 'rgba(239, 68, 68, 0.15)' || td.style.background.includes('239, 68, 68')) {
-                        td.style.background = '';
-                        td.style.color = '';
-                        td.style.fontWeight = '';
-                        td.removeAttribute('title');
-                      }
+                      // Reset styling if it was corrected or is currently being edited
+                      td.style.background = '';
+                      td.style.color = '';
+                      td.style.fontWeight = '';
+                      td.removeAttribute('title');
                     }
                   };
                   return cellProperties;
@@ -859,6 +862,68 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
                       color: '#4f46e5'
                     }} title="AI Formula Generator">
                       <Sparkles size={14} />
+                    </button>
+
+                    <button onMouseDown={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      const hotInstance = hotRef.current?.hotInstance;
+                      if (!hotInstance) return;
+                      
+                      const range = floatingMenu.range;
+                      if (!range) return;
+                      
+                      setIsGeneratingFormula(true);
+                      try {
+                        const token = localStorage.getItem("vexius_token");
+                        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+                        
+                        // Send the entire sheet data for full context, but specify the target cell in a custom prompt addition
+                        const fullSheetCSV = getFullText();
+                        const [startRow, startCol, endRow, endCol] = range;
+                        const cellCoord = `${String.fromCharCode(65 + startCol)}${startRow + 1}`;
+                        
+                        const res = await fetch(`${apiUrl}/ai/agents/financial-analyst`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify({ 
+                            documentId, 
+                            workspaceId: window.location.pathname.split('/')[2], 
+                            documentContent: `[TARGET SELECTION: Cell ${cellCoord} (Row ${startRow}, Col ${startCol})]\n\nFull Spreadsheet Context:\n${fullSheetCSV}` 
+                          })
+                        });
+                        
+                        if (res.ok) {
+                          const data = await res.json();
+                          // Execute applyAction with AI response updates
+                          if (data && data.result) {
+                            applyAction(data.result);
+                          }
+                        }
+                      } catch (err) {
+                        console.error("AI Fix cell error", err);
+                      } finally {
+                        setIsGeneratingFormula(false);
+                        setFloatingMenu({ ...floatingMenu, visible: false });
+                      }
+                    }} style={{
+                      padding: '4px 8px', 
+                      background: '#ecfdf5', 
+                      border: '1px solid #a7f3d0', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px', 
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#059669'
+                    }} title="AI Fix Cell Formula">
+                      <Wrench size={14} color="#10b981" /> Fix Cell
                     </button>
                     
                     <button onMouseDown={(e) => {

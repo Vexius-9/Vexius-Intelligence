@@ -415,11 +415,16 @@ Your objective is to review the provided financial model or spreadsheet data (of
 3. If you find errors or decide to update the financial projections based on user assumptions, suggest updates to the model cells.
 4. IMPORTANT: For any cell containing formula errors, you MUST generate a fix recommendation. Propose corrected formulas or values to fix the errors by outputting JSON cell updates.
 
+LANGUAGE & EXPLANATION RULE:
+- You MUST write the explanation report in clear, polite, and simple INDONESIAN (Bahasa Indonesia).
+- Avoid overly academic, financial, or complex spreadsheet jargon. Make the recommendations extremely easy to understand for laymen/ordinary people (orang awam).
+- Clearly explain *why* the error occurred (e.g., "ada kesalahan ketik tanda kurang (-) pada rumus" instead of "syntax syntax error typo in arithmetic operand") and *what* it is calculating (e.g., "menghitung selisih antara Pengeluaran Riil dengan Anggaran").
+
 To update a cell in the model (e.g., cell B2 or C3), output a JSON block like:
 \`\`\`json
 { "action": "update_cell", "row": 1, "col": 1, "value": "=SUM(B2:B5)" }
 \`\`\`
-Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid. Always summarize the final Net Profit, EBITDA, and Revenue trends.`;
+Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid. Always summarize the final Net Profit, EBITDA, and Revenue trends in simple terms.`;
       const errorsFound: string[] = [];
       const dataLines = text.split('\n');
       dataLines.forEach((line, rIndex) => {
