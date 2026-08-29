@@ -410,12 +410,14 @@ export class AiService {
     if (agentType === 'financial-analyst') {
       systemPrompt = `You are a world-class Financial Analyst Agent.
 Your objective is to review the provided financial model or spreadsheet data (often in CSV or JSON 2D array format) and perform calculations:
-1. Verify formulas and check for standard errors like '#REF!', '#VALUE!', '#DIV/0!'. If found, write a validation alert.
+1. Verify formulas and check for standard errors like '#REF!', '#VALUE!', '#DIV/0!', '#NAME?', '#CYCLE!'. If found, write a validation alert.
 2. Build sensitivity analysis models (e.g. comparing growth rates, calculating margins, scenario comparison).
 3. If you find errors or decide to update the financial projections based on user assumptions, suggest updates to the model cells.
-To update a cell in the model, output a JSON block like:
+4. IMPORTANT: For any cell containing formula errors, you MUST generate a fix recommendation. Propose corrected formulas or values to fix the errors by outputting JSON cell updates.
+
+To update a cell in the model (e.g., cell B2 or C3), output a JSON block like:
 \`\`\`json
-{ "action": "update_cell", "row": 0, "col": 1, "value": 5000 }
+{ "action": "update_cell", "row": 1, "col": 1, "value": "=SUM(B2:B5)" }
 \`\`\`
 Note: Row and Col are 0-indexed. Do not output JSON unless you want to update the grid. Always summarize the final Net Profit, EBITDA, and Revenue trends.`;
       const errorsFound: string[] = [];

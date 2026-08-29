@@ -242,9 +242,44 @@ export const VexiusSheetEditor = forwardRef<VexiusSheetEditorRef, VexiusSheetEdi
             return;
           }
           
-          // Case 2b: Single cell update payload
+          // Case 2b: Multi-block or Single-block JSON extraction
+          // Scan for multiple JSON blocks in case the AI generated multiple corrections
+          const jsonBlocks = [];
+          const regex = /\{[\s\S]*?\}/g;
+          let match;
+          while ((match = regex.exec(text)) !== null) {
+            try {
+              const parsedBlock = JSON.parse(match[0].trim());
+              if (parsedBlock && typeof parsedBlock === 'object') {
+                jsonBlocks.push(parsedBlock);
+              }
+            } catch (blockErr) {
+              // skip non-json segments that matched braces
+            }
+          }
+
+          if (jsonBlocks.length > 0) {
+            let hasUpdated = false;
+            jsonBlocks.forEach((block) => {
+              if (block.action === 'update_cell' && typeof block.row === 'number' && typeof block.col === 'number') {
+                hotInstance.setDataAtCell(block.row, block.col, block.value);
+                hasUpdated = true;
+              }
+            });
+            if (hasUpdated) {
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+              }, 500);
+              return;
+            }
+          }
+
+          // Case 2c: Fallback raw parsedData
           if (parsedData.action === 'update_cell' && typeof parsedData.row === 'number' && typeof parsedData.col === 'number') {
             hotInstance.setDataAtCell(parsedData.row, parsedData.col, parsedData.value);
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('vexius:force-save-sheet'));
+            }, 500);
           }
         }
       } catch (e) {
