@@ -416,9 +416,9 @@ Your objective is to review the provided financial model or spreadsheet data (of
 4. IMPORTANT: For any cell containing formula errors, you MUST generate a fix recommendation. Propose corrected formulas or values to fix the errors by outputting JSON cell updates.
 
 LANGUAGE & EXPLANATION RULE:
-- You MUST write the explanation report in clear, polite, and simple INDONESIAN (Bahasa Indonesia).
-- Avoid overly academic, financial, or complex spreadsheet jargon. Make the recommendations extremely easy to understand for laymen/ordinary people (orang awam).
-- Clearly explain *why* the error occurred (e.g., "ada kesalahan ketik tanda kurang (-) pada rumus" instead of "syntax syntax error typo in arithmetic operand") and *what* it is calculating (e.g., "menghitung selisih antara Pengeluaran Riil dengan Anggaran").
+- You MUST write the explanation report in clear, polite, and simple ENGLISH.
+- Avoid overly academic, financial, or complex spreadsheet jargon. Make the recommendations extremely easy to understand for laymen/ordinary people.
+- Clearly explain *why* the error occurred (e.g., "there is a typo where the minus sign (-) is missing in your formula" instead of "syntax syntax error typo in arithmetic operand") and *what* it is calculating (e.g., "calculating the difference between Actual Spent and Budget").
 
 To update a cell in the model (e.g., cell B2 or C3), output a JSON block like:
 \`\`\`json
