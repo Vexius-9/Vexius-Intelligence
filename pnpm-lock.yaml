@@ -26,13 +26,13 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^4.0.39
-        version: 4.0.39(zod@4.4.3)
+        version: 4.0.39(zod@4.5.2)
       '@ai-sdk/google':
         specifier: ^4.0.44
-        version: 4.0.44(zod@4.4.3)
+        version: 4.0.44(zod@4.5.2)
       '@ai-sdk/openai':
         specifier: ^4.0.42
-        version: 4.0.42(zod@4.4.3)
+        version: 4.0.42(zod@4.5.2)
       '@fastify/cors':
         specifier: ^11.3.0
         version: 11.3.0
@@ -77,7 +77,7 @@ importers:
         version: link:../../packages/storage
       ai:
         specifier: ^7.0.66
-        version: 7.0.66(zod@4.4.3)
+        version: 7.0.66(zod@4.5.2)
       axios:
         specifier: ^1.19.0
         version: 1.19.0
@@ -126,6 +126,9 @@ importers:
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
+      zod:
+        specifier: ^4.5.2
+        version: 4.5.2
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.2.0
@@ -9507,6 +9510,9 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
+  zod@4.5.2:
+    resolution: {integrity: sha512-XkYXCol10+ba/6F/cueWV+TezUeOqXW0hdeJt5CdXjTYeAgAQg5N03RQdJ80mhfFE72+pblvYMW4wy2Qp4Qbrg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -9514,30 +9520,30 @@ snapshots:
 
   '@adraffy/ens-normalize@1.11.1': {}
 
-  '@ai-sdk/anthropic@4.0.39(zod@4.4.3)':
+  '@ai-sdk/anthropic@4.0.39(zod@4.5.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.5.2)
+      zod: 4.5.2
 
-  '@ai-sdk/gateway@4.0.52(zod@4.4.3)':
+  '@ai-sdk/gateway@4.0.52(zod@4.5.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.5.2)
       '@vercel/oidc': 3.2.0
-      zod: 4.4.3
+      zod: 4.5.2
 
-  '@ai-sdk/google@4.0.44(zod@4.4.3)':
+  '@ai-sdk/google@4.0.44(zod@4.5.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.5.2)
+      zod: 4.5.2
 
-  '@ai-sdk/openai@4.0.42(zod@4.4.3)':
+  '@ai-sdk/openai@4.0.42(zod@4.5.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.5.2)
+      zod: 4.5.2
 
   '@ai-sdk/provider-utils@1.0.22(zod@4.4.3)':
     dependencies:
@@ -9548,14 +9554,14 @@ snapshots:
     optionalDependencies:
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@5.0.27(zod@4.4.3)':
+  '@ai-sdk/provider-utils@5.0.27(zod@4.5.2)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
       undici: 7.29.0
-      zod: 4.4.3
+      zod: 4.5.2
 
   '@ai-sdk/provider@0.0.26':
     dependencies:
@@ -14804,12 +14810,12 @@ snapshots:
       - solid-js
       - vue
 
-  ai@7.0.66(zod@4.4.3):
+  ai@7.0.66(zod@4.5.2):
     dependencies:
-      '@ai-sdk/gateway': 4.0.52(zod@4.4.3)
+      '@ai-sdk/gateway': 4.0.52(zod@4.5.2)
       '@ai-sdk/provider': 4.0.7
-      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
-      zod: 4.4.3
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.5.2)
+      zod: 4.5.2
 
   ajv-formats@2.1.1(ajv@8.20.0):
     optionalDependencies:
@@ -21425,5 +21431,7 @@ snapshots:
   zod@3.22.4: {}
 
   zod@4.4.3: {}
+
+  zod@4.5.2: {}
 
   zwitch@2.0.4: {}
