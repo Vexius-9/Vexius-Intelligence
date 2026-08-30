@@ -356,6 +356,18 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
 
   const overrideHandleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Auto-detect deep research intent — route to handleDeepResearch instead of regular chat
+    const trimmed = input.trim();
+    const isResearchIntent = /\b(deep\s*research|conduct\s*(in[- ]?depth|deep|comprehensive)\s*research|in[- ]?depth\s*(research|analysis)|analyze\s+.{5,}\s+(ecosystem|market|trend|landscape|comparison|performance)|research\s+(on|about|comparing|into)\b)/i.test(trimmed);
+    const startsWithUrl = /^https?:\/\//i.test(trimmed);
+    const hasResearchKeywordsAfterUrl = startsWithUrl && /\b(research|analyze|analysis|compare|investigate|explore|examine)\b/i.test(trimmed);
+
+    if (isResearchIntent || hasResearchKeywordsAfterUrl) {
+      handleDeepResearch();
+      return;
+    }
+
     if (getCurrentSelection) {
       const text = await getCurrentSelection();
       if (text && text.trim() !== "") {
