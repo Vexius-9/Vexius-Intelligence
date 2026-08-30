@@ -116,6 +116,16 @@ export class DocumentsController {
     return this.documentsService.getDocument(id, user.id);
   }
 
+  @Get(':id/text')
+  @UseGuards(HybridAuthGuard)
+  async getDocumentText(
+    @Param('id') id: string,
+    @CurrentUser() user: any
+  ) {
+    const text = await this.documentsService.getDocumentText(id, user.id);
+    return { text };
+  }
+
   @Patch(':id')
   @UseGuards(HybridAuthGuard)
   async renameDocument(

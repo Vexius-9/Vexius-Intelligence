@@ -580,7 +580,17 @@ ${numberedSources.join('\n\n')}
       markdownContent += `\n\n---\n\n## References\n\n${refsBlock}\n`;
     }
 
-    const buffer = Buffer.from(markdownContent, 'utf-8');
+    // Convert simple markdown to a ProseMirror JSON document
+    const paragraphs = markdownContent.split('\\n\\n').filter(p => p.trim());
+    const docJson = {
+      type: "doc",
+      content: paragraphs.map(text => ({
+        type: "paragraph",
+        content: [{ type: "text", text }]
+      }))
+    };
+
+    const buffer = Buffer.from(JSON.stringify(docJson), 'utf-8');
 
     // 2. Save document to storage and DB
     const { StorageClient } = await import('@vexius/storage');
@@ -589,18 +599,21 @@ ${numberedSources.join('\n\n')}
     const storageClient = new StorageClient(supabaseUrl, supabaseKey);
 
     const newDocId = crypto.randomUUID();
-    const storagePath = `workspaces/${workspaceId}/documents/${newDocId}/versions/1-${resultFileName}`;
+    // Use .json extension instead of the original .md
+    const jsonFileName = resultFileName.replace(/\.md$/, '.json');
+    const storagePath = `workspaces/${workspaceId}/documents/${newDocId}/versions/1-${jsonFileName}`;
 
-    await storageClient.uploadFile('vexius-documents', storagePath, buffer, 'text/markdown');
+    await storageClient.uploadFile('vexius-documents', storagePath, buffer, 'application/json');
 
     const createdDoc = await this.prisma.document.create({
       data: {
         id: newDocId,
         workspaceId,
         ownerId: userId,
-        name: resultFileName,
+        // Make the file name visible as .docx so it matches native docs convention
+        name: resultFileName.replace(/\.md$/, '.docx'),
         type: 'document',
-        mimeType: 'text/markdown',
+        mimeType: 'application/json',
         storageKey: storagePath,
         size: buffer.length,
         currentVersion: 1,

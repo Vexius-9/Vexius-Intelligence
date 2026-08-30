@@ -240,8 +240,31 @@ async function handleTool(
 
     case 'vexius_read_document': {
       const { documentId } = args as { documentId: string };
-      const data = await vexiusRequest('GET', `/documents/${documentId}`);
-      return JSON.stringify(data, null, 2);
+      const metadata = await vexiusRequest('GET', `/documents/${documentId}`) as any;
+      
+      let content = null;
+      let text = null;
+      
+      try {
+        if (metadata.mimeType === 'application/json') {
+           content = await vexiusRequest('GET', `/documents/${documentId}/json`);
+        }
+      } catch (err) {
+        // Ignore json error
+      }
+      
+      try {
+         const textData = await vexiusRequest('GET', `/documents/${documentId}/text`) as any;
+         text = textData.text;
+      } catch (err) {
+         // Ignore text error
+      }
+
+      return JSON.stringify({ 
+        metadata, 
+        content: content || "Not a native JSON document.",
+        extracted_text: text || "Text not extracted or indexing in progress."
+      }, null, 2);
     }
 
     case 'vexius_update_document': {

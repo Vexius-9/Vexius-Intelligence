@@ -198,6 +198,32 @@ export class DocumentsService {
     }
   }
 
+  async getDocumentText(documentId: string, userId: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id: documentId }
+    });
+
+    if (!document) throw new NotFoundException('Document not found');
+
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: document.workspaceId, userId } }
+    });
+
+    if (!membership) throw new NotFoundException('Access denied');
+
+    // Fetch text from document_chunks table
+    const chunks = await this.prisma.$queryRaw<{content: string}[]>`
+      SELECT content FROM document_chunks WHERE document_id = ${documentId} ORDER BY created_at ASC
+    `;
+
+    if (chunks.length > 0) {
+      return chunks.map(c => c.content).join('\\n\\n');
+    }
+
+    return "(Document text not available or still indexing)";
+  }
+
+
   async createBlankDocument(userId: string, workspaceId: string, name: string, docType: 'document' | 'spreadsheet' | 'presentation' | 'folder' = 'document', parentId?: string) {
     // 1. Verify membership
     const membership = await this.prisma.workspaceMember.findUnique({
@@ -342,6 +368,9 @@ export class DocumentsService {
       let finalContent = content;
 
       if (document.type === 'document') {
+        if (document.mimeType !== 'application/json') {
+          throw new BadRequestException('Cannot edit non-native documents (like DOCX) via this API');
+        }
         if (mode === 'append') {
           try {
             const existingBlob = await this.storageClient.downloadFile('vexius-documents', document.storageKey);
