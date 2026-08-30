@@ -521,20 +521,30 @@ STRUCTURE REQUIREMENTS (follow this exactly):
 6. **Expert Insights & Market Trends** — synthesize forward-looking perspectives
 7. **Risks, Challenges & Limitations** — balanced critique
 8. **Recommendations & Conclusion** — actionable takeaways
-9. **References & Citations** — numbered footnotes with real source URLs
+
+CRITICAL CITATION RULES:
+- You are provided with numbered sources [Source 1], [Source 2], etc.
+- When citing a fact, use the format [Source N] inline (e.g. "Solana processes 50,000 TPS [Source 1]")
+- ONLY cite sources that are provided below. Do NOT invent, fabricate, or hallucinate any URLs or source titles.
+- Do NOT create a References/Bibliography/Footnotes section at the end — it will be auto-generated from verified sources.
 
 STYLE RULES:
 - Use professional academic/analyst tone throughout
-- Every major claim must be backed by a citation [^n]
 - Include specific numbers, percentages, and dates wherever possible
 - Use markdown headers (##, ###, ####), bullet lists, numbered lists, and tables liberally
 - Do NOT use conversational filler or phrases like "In this report, we will..."
 - Minimum output: 2000 words. Aim for 3000+ words.`;
 
+      // Build numbered source blocks so AI can cite them properly
+      const numberedSources = pageContents.map((content, idx) => {
+        return `=== [Source ${idx + 1}] ===\n${content}`;
+      });
+
       prompt = `User Query: ${text}
 
-Here are the collected web references and facts to synthesize:
-${pageContents.join('\n\n')}
+Here are the verified web sources to base your analysis on. Cite them as [Source N]:
+
+${numberedSources.join('\n\n')}
 `;
       resultFileName = `Deep Research - ${text.slice(0, 20)}.md`;
     }
@@ -550,7 +560,25 @@ ${pageContents.join('\n\n')}
       maxTokens: agentType === 'deep-researcher' ? 8000 : 4000,
     });
 
-    const markdownContent = result.text;
+    let markdownContent = result.text;
+
+    // Post-process deep-researcher: strip any AI-fabricated references section and append real ones
+    if (agentType === 'deep-researcher' && scrapedSources.length > 0) {
+      // Remove any AI-generated References/Bibliography/Footnotes section at the end
+      markdownContent = markdownContent.replace(/\n+(?:#{1,4}\s*)?(?:References|Bibliography|Sources|Footnotes|Works Cited|Citations)[\s\S]*$/i, '');
+      // Remove any [^n]: footnote definitions the AI might have added
+      markdownContent = markdownContent.replace(/^\[\^\d+\]:.*$/gm, '');
+      // Clean up trailing whitespace
+      markdownContent = markdownContent.trimEnd();
+
+      // Append verified references
+      const refsBlock = scrapedSources.map((s, i) =>
+        `${i + 1}. [${s.title || 'Source'}](${s.url})${s.snippet ? ' — ' + s.snippet.slice(0, 120) : ''}`
+      ).join('\n');
+
+      markdownContent += `\n\n---\n\n## References\n\n${refsBlock}\n`;
+    }
+
     const buffer = Buffer.from(markdownContent, 'utf-8');
 
     // 2. Save document to storage and DB
