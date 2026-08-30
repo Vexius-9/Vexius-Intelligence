@@ -341,7 +341,7 @@ export class DocumentsService {
     try {
       let finalContent = content;
 
-      if (document.mimeType === 'application/vnd.vexius.document') {
+      if (document.type === 'document') {
         if (mode === 'append') {
           try {
             const existingBlob = await this.storageClient.downloadFile('vexius-documents', document.storageKey);
