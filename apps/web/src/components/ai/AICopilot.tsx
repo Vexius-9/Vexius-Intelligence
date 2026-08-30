@@ -512,8 +512,6 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                             // Comprehensive markdown-to-HTML converter
                             const lines = text.split('\n');
                             const htmlLines: string[] = [];
-                            let inList = false;
-                            let inOrderedList = false;
 
                             const transform = (s: string) => s
                               .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
@@ -523,22 +521,68 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                               .replace(/\*(.+?)\*/g, '<em>$1</em>')
                               .replace(/\[\^(\d+)\]/g, '<sup>[$1]</sup>');
 
-                            for (const line of lines) {
-                              const isListItem = /^[-*+] /.test(line);
-                              const isOrderedItem = /^\d+\.\s/.test(line);
+                            // ── PRE-PASS: group lines into blocks ──────────────────
+                            const blocks: string[] = [];
+                            let i = 0;
+                            while (i < lines.length) {
+                              const line = lines[i];
+                              // Detect markdown table: line starts with '|' and next non-empty line is a separator
+                              if (/^\|/.test(line)) {
+                                let tableLines: string[] = [];
+                                while (i < lines.length && /^\|/.test(lines[i])) {
+                                  tableLines.push(lines[i]);
+                                  i++;
+                                }
+                                // Build HTML table
+                                const [headerLine, separatorLine, ...bodyLines] = tableLines;
+                                if (separatorLine && /^[\s|:-]+$/.test(separatorLine)) {
+                                  const parseRow = (row: string) =>
+                                    row.split('|').filter((_, ci) => ci > 0 && ci < row.split('|').length - 1).map(c => c.trim());
+                                  const headers = parseRow(headerLine);
+                                  const theadHtml = `<thead><tr>${headers.map(h => `<th style="border:1px solid #334155;padding:8px 12px;background:#1e293b;font-weight:600;text-align:left;white-space:nowrap">${transform(h)}</th>`).join('')}</tr></thead>`;
+                                  const tbodyHtml = bodyLines.map(row => {
+                                    const cells = parseRow(row);
+                                    return `<tr>${cells.map(c => `<td style="border:1px solid #334155;padding:8px 12px;vertical-align:top">${transform(c)}</td>`).join('')}</tr>`;
+                                  }).join('');
+                                  blocks.push(`<table style="border-collapse:collapse;width:100%;margin:12px 0;font-size:0.85em">${theadHtml}<tbody>${tbodyHtml}</tbody></table>`);
+                                } else {
+                                  // Not a real table, add as raw lines
+                                  tableLines.forEach(tl => blocks.push(tl));
+                                }
+                              } else {
+                                blocks.push(line);
+                                i++;
+                              }
+                            }
+
+                            // ── MAIN PASS: process non-table blocks line by line ────
+                            let inList = false;
+                            let inOrderedList = false;
+
+                            for (const block of blocks) {
+                              // Already-rendered HTML block (e.g. our tables)
+                              if (/^<table/.test(block)) {
+                                if (inList) { htmlLines.push('</ul>'); inList = false; }
+                                if (inOrderedList) { htmlLines.push('</ol>'); inOrderedList = false; }
+                                htmlLines.push(block);
+                                continue;
+                              }
+
+                              const isListItem = /^[-*+] /.test(block);
+                              const isOrderedItem = /^\d+\.\s/.test(block);
 
                               if (inList && !isListItem) { htmlLines.push('</ul>'); inList = false; }
                               if (inOrderedList && !isOrderedItem) { htmlLines.push('</ol>'); inOrderedList = false; }
 
-                              if (/^#### /.test(line)) { htmlLines.push(`<h4>${transform(line.slice(5))}</h4>`); continue; }
-                              if (/^### /.test(line)) { htmlLines.push(`<h3>${transform(line.slice(4))}</h3>`); continue; }
-                              if (/^## /.test(line)) { htmlLines.push(`<h2>${transform(line.slice(3))}</h2>`); continue; }
-                              if (/^# /.test(line)) { htmlLines.push(`<h1>${transform(line.slice(2))}</h1>`); continue; }
-                              if (/^[-*_]{3,}$/.test(line.trim())) { htmlLines.push('<hr>'); continue; }
-                              if (/^> /.test(line)) { htmlLines.push(`<blockquote><p>${transform(line.slice(2))}</p></blockquote>`); continue; }
+                              if (/^#### /.test(block)) { htmlLines.push(`<h4>${transform(block.slice(5))}</h4>`); continue; }
+                              if (/^### /.test(block)) { htmlLines.push(`<h3>${transform(block.slice(4))}</h3>`); continue; }
+                              if (/^## /.test(block)) { htmlLines.push(`<h2>${transform(block.slice(3))}</h2>`); continue; }
+                              if (/^# /.test(block)) { htmlLines.push(`<h1>${transform(block.slice(2))}</h1>`); continue; }
+                              if (/^[-*_]{3,}$/.test(block.trim())) { htmlLines.push('<hr>'); continue; }
+                              if (/^> /.test(block)) { htmlLines.push(`<blockquote><p>${transform(block.slice(2))}</p></blockquote>`); continue; }
 
                               // Footnote definition: [^n]: text
-                              const fnMatch = line.match(/^\[\^(\d+)\]: (.*)/);
+                              const fnMatch = block.match(/^\[\^(\d+)\]: (.*)/);
                               if (fnMatch) {
                                 htmlLines.push(`<p style="font-size:0.8em;color:#94a3b8;margin:2px 0"><sup>[${fnMatch[1]}]</sup> ${transform(fnMatch[2])}</p>`);
                                 continue;
@@ -546,16 +590,16 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
 
                               if (isListItem) {
                                 if (!inList) { htmlLines.push('<ul>'); inList = true; }
-                                htmlLines.push(`<li>${transform(line.replace(/^[-*+] /, ''))}</li>`);
+                                htmlLines.push(`<li>${transform(block.replace(/^[-*+] /, ''))}</li>`);
                                 continue;
                               }
                               if (isOrderedItem) {
                                 if (!inOrderedList) { htmlLines.push('<ol>'); inOrderedList = true; }
-                                htmlLines.push(`<li>${transform(line.replace(/^\d+\.\s/, ''))}</li>`);
+                                htmlLines.push(`<li>${transform(block.replace(/^\d+\.\s/, ''))}</li>`);
                                 continue;
                               }
-                              if (line.trim() === '') { htmlLines.push(''); continue; }
-                              htmlLines.push(`<p>${transform(line)}</p>`);
+                              if (block.trim() === '') { htmlLines.push(''); continue; }
+                              htmlLines.push(`<p>${transform(block)}</p>`);
                             }
 
                             if (inList) htmlLines.push('</ul>');

@@ -1,0 +1,48 @@
+{
+  "name": "@vexius/mcp",
+  "version": "1.0.0",
+  "description": "Official Vexius Intelligence MCP (Model Context Protocol) Server — connect Claude, Cursor, and any MCP-compatible AI to your Vexius workspace.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "vexius-mcp": "dist/server.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/server.ts",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/server.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "vexius",
+    "ai",
+    "workspace",
+    "agent",
+    "claude",
+    "cursor"
+  ],
+  "author": "Vexius Intelligence",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
