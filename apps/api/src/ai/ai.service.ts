@@ -421,6 +421,7 @@ export class AiService {
     let prompt = "";
     let resultFileName = "";
     let systemPrompt = "";
+    let scrapedSources: { title: string; url: string; snippet: string }[] = [];
 
     if (agentType === 'financial-analyst') {
       systemPrompt = `You are a world-class Financial Analyst Agent.
@@ -483,22 +484,52 @@ ${text.substring(0, 50000)}
       this.logger.log(`Deep Researcher Agent started. Plan: Search web for "${text}"`);
       // Step 1: Sequential Planning & Web Search
       const searchResults = await this.browserService.search(text);
-      const topUrls = searchResults.slice(0, 3).map(r => r.link);
+      const topSources = searchResults.slice(0, 5);
       
-      // Step 2: Source collection & extraction
+      // Step 2: Source collection & extraction — track scraped metadata
       const pageContents: string[] = [];
-      for (const url of topUrls) {
+
+      for (const source of topSources) {
         try {
-          const scraped = await this.browserService.scrapePage(url);
-          pageContents.push(`SOURCE: ${url}\nTITLE: ${scraped.title}\nCONTENT EXCERPT: ${scraped.content.slice(0, 4000)}`);
+          const scraped = await this.browserService.scrapePage(source.link);
+          pageContents.push(`SOURCE: ${source.link}\nTITLE: ${scraped.title || source.title}\nCONTENT EXCERPT: ${scraped.content.slice(0, 5000)}`);
+          scrapedSources.push({
+            title: scraped.title || source.title,
+            url: source.link,
+            snippet: source.snippet || scraped.content.slice(0, 180),
+          });
         } catch (e) {
-          this.logger.warn(`Failed to scrape source during Deep Research: ${url}`);
+          this.logger.warn(`Failed to scrape source during Deep Research: ${source.link}`);
+          scrapedSources.push({
+            title: source.title,
+            url: source.link,
+            snippet: source.snippet || '',
+          });
         }
       }
 
-      systemPrompt = `You are the Vexius Deep Researcher Agent.
-Your task is to synthesize the search queries and extracted page contents into a highly structured, source-backed markdown report.
-Ensure you cross-reference facts, note discrepancies, and list citations at the bottom. Do not use conversational filler.`;
+      systemPrompt = `You are the Vexius Deep Researcher Agent — an elite research analyst producing professional, publication-ready reports.
+
+Your mandate is to write a COMPREHENSIVE, LONG-FORM research report of at least 2000 words. The report must be exhaustive, authoritative, and richly detailed.
+
+STRUCTURE REQUIREMENTS (follow this exactly):
+1. **Executive Summary** (150-200 words) — key findings and conclusions
+2. **Introduction & Background** — context, why this topic matters, scope of research
+3. **Methodology** — how data was gathered and evaluated
+4. **Main Analysis Sections** (minimum 4 distinct sections with H3 headers) — deep-dive into each major dimension of the topic with data points, statistics, and examples
+5. **Comparative Analysis Table** — a markdown table comparing key metrics side-by-side where applicable
+6. **Expert Insights & Market Trends** — synthesize forward-looking perspectives
+7. **Risks, Challenges & Limitations** — balanced critique
+8. **Recommendations & Conclusion** — actionable takeaways
+9. **References & Citations** — numbered footnotes with real source URLs
+
+STYLE RULES:
+- Use professional academic/analyst tone throughout
+- Every major claim must be backed by a citation [^n]
+- Include specific numbers, percentages, and dates wherever possible
+- Use markdown headers (##, ###, ####), bullet lists, numbered lists, and tables liberally
+- Do NOT use conversational filler or phrases like "In this report, we will..."
+- Minimum output: 2000 words. Aim for 3000+ words.`;
 
       prompt = `User Query: ${text}
 
@@ -516,6 +547,7 @@ ${pageContents.join('\n\n')}
       model,
       system: systemPrompt ? systemPrompt : undefined,
       prompt,
+      maxTokens: agentType === 'deep-researcher' ? 8000 : 4000,
     });
 
     const markdownContent = result.text;
@@ -575,7 +607,8 @@ ${pageContents.join('\n\n')}
 
     return {
       ...createdDoc,
-      result: markdownContent
+      result: markdownContent,
+      sources: scrapedSources,
     };
   }
 }

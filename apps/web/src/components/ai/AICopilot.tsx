@@ -23,7 +23,7 @@ interface AICopilotProps {
   onAiEnd?: () => void;
 }
 
-import { AICopilotQuickSearch } from "./AICopilotQuickSearch";
+
 
 export function AICopilot({ documentContext, getCurrentSelection, getFullText, onApplyAction, onAiStart, onAiEnd }: AICopilotProps) {
   const [selectedModel, setSelectedModel] = useState<string>("deepseek:deepseek-chat");
@@ -32,6 +32,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
   const [cachedSelection, setCachedSelection] = useState<string>("");
   const [deepResearchSteps, setDeepResearchSteps] = useState<{label: string; done: boolean}[]>([]);
   const [isDeepResearching, setIsDeepResearching] = useState(false);
+  const [deepResearchSources, setDeepResearchSources] = useState<{title: string; url: string; snippet: string}[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -262,15 +263,22 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       }
 
       const data = await res.json();
+      const sources: {title: string; url: string; snippet: string}[] = data.sources || [];
 
       // Mark all steps done
       setDeepResearchSteps(prev => prev.map(s => ({ ...s, done: true })));
 
       setTimeout(() => {
+        // Build sources block to append at end of message content
+        const sourcesBlock = sources.length > 0
+          ? `\n\n---\n**Web Sources Used (${sources.length})**\n${sources.map((s, i) => `${i + 1}. [${s.title || s.url}](${s.url})`).join('\n')}`
+          : '';
+
+        setDeepResearchSources(sources);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `**🔬 Deep Research Report**\n\n${data.result}\n\n---\n*Report saved to your workspace as a document.*`
+          content: `**Deep Research Report**\n\n${data.result}${sourcesBlock}\n\n---\n*Report saved to your workspace as a document.*`
         }]);
         setIsDeepResearching(false);
         setDeepResearchSteps([]);
@@ -287,6 +295,61 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       }]);
       setIsDeepResearching(false);
       setDeepResearchSteps([]);
+      if (onAiEnd) onAiEnd();
+    }
+  };
+
+  const handleWebSearch = async () => {
+    const query = input.trim();
+    if (!query) return;
+
+    const isUrl = /^https?:\/\/.+/i.test(query);
+
+    // Add user message to chat
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: 'user',
+      content: isUrl ? `🌐 Extract page: ${query}` : `🔍 Search: ${query}`
+    }]);
+
+    setIsProcessingAction(true);
+    if (onAiStart) onAiStart();
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/ai/inline-action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ action: 'browser_search', text: query })
+      });
+
+      if (!res.ok) throw new Error('Search failed');
+      const data = await res.json();
+      const parsed = JSON.parse(data.result);
+
+      let content = '';
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Keyword search results
+        content = `**Search Results for "${query}"**\n\n` +
+          parsed.map((r: any, i: number) => `**${i + 1}. [${r.title}](${r.link})**\n${r.snippet}`).join('\n\n');
+      } else if (parsed && parsed.url) {
+        // URL scrape result
+        const badge = parsed.usedFallback ? ' ⚡ via Playwright' : '';
+        content = `**[${parsed.title || parsed.url}](${parsed.url})**${badge}\n\n${parsed.content?.slice(0, 1200) || '_No content extracted._'}${(parsed.content?.length || 0) > 1200 ? '\n\n_...content truncated_' : ''}`;
+      } else {
+        content = `No results found for "${query}".`;
+      }
+
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content }]);
+    } catch (err: any) {
+      console.error('[WebSearch]', err);
+      toast.error(`Search failed: ${err.message}`);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), role: 'assistant',
+        content: `❌ Search failed: ${err.message}`
+      }]);
+    } finally {
+      setIsProcessingAction(false);
       if (onAiEnd) onAiEnd();
     }
   };
@@ -392,9 +455,6 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         </div>
       </div>
 
-      {/* Quick Web Search Panel */}
-      <AICopilotQuickSearch token={token} />
-
       {/* Messages Area */}
       <div className="custom-scrollbar" style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "24px" }}>
         {messages.map((msg, i) => (
@@ -446,21 +506,62 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
                         } else {
                           let text = msg.content.replace(/^\*\*.*?\*\*\n\n/, ''); // Remove title like **Summary**
                           
-                          // If it looks like HTML, don't wrap it in <p> tags
                           const isHtml = /<[a-z][\s\S]*>/i.test(text);
                           
                           if (!isHtml) {
-                            // Basic markdown to HTML
-                            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                            text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-                            text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-                            text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-                            // Handle paragraphs, avoiding empty ones
-                            text = text.split('\n\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+                            // Comprehensive markdown-to-HTML converter
+                            const lines = text.split('\n');
+                            const htmlLines: string[] = [];
+                            let inList = false;
+                            let inOrderedList = false;
+
+                            const transform = (s: string) => s
+                              .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                              .replace(/`([^`]+)`/g, '<code>$1</code>')
+                              .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                              .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                              .replace(/\[\^(\d+)\]/g, '<sup>[$1]</sup>');
+
+                            for (const line of lines) {
+                              const isListItem = /^[-*+] /.test(line);
+                              const isOrderedItem = /^\d+\.\s/.test(line);
+
+                              if (inList && !isListItem) { htmlLines.push('</ul>'); inList = false; }
+                              if (inOrderedList && !isOrderedItem) { htmlLines.push('</ol>'); inOrderedList = false; }
+
+                              if (/^#### /.test(line)) { htmlLines.push(`<h4>${transform(line.slice(5))}</h4>`); continue; }
+                              if (/^### /.test(line)) { htmlLines.push(`<h3>${transform(line.slice(4))}</h3>`); continue; }
+                              if (/^## /.test(line)) { htmlLines.push(`<h2>${transform(line.slice(3))}</h2>`); continue; }
+                              if (/^# /.test(line)) { htmlLines.push(`<h1>${transform(line.slice(2))}</h1>`); continue; }
+                              if (/^[-*_]{3,}$/.test(line.trim())) { htmlLines.push('<hr>'); continue; }
+                              if (/^> /.test(line)) { htmlLines.push(`<blockquote><p>${transform(line.slice(2))}</p></blockquote>`); continue; }
+
+                              // Footnote definition: [^n]: text
+                              const fnMatch = line.match(/^\[\^(\d+)\]: (.*)/);
+                              if (fnMatch) {
+                                htmlLines.push(`<p style="font-size:0.8em;color:#94a3b8;margin:2px 0"><sup>[${fnMatch[1]}]</sup> ${transform(fnMatch[2])}</p>`);
+                                continue;
+                              }
+
+                              if (isListItem) {
+                                if (!inList) { htmlLines.push('<ul>'); inList = true; }
+                                htmlLines.push(`<li>${transform(line.replace(/^[-*+] /, ''))}</li>`);
+                                continue;
+                              }
+                              if (isOrderedItem) {
+                                if (!inOrderedList) { htmlLines.push('<ol>'); inOrderedList = true; }
+                                htmlLines.push(`<li>${transform(line.replace(/^\d+\.\s/, ''))}</li>`);
+                                continue;
+                              }
+                              if (line.trim() === '') { htmlLines.push(''); continue; }
+                              htmlLines.push(`<p>${transform(line)}</p>`);
+                            }
+
+                            if (inList) htmlLines.push('</ul>');
+                            if (inOrderedList) htmlLines.push('</ol>');
+                            text = htmlLines.join('\n');
                           } else {
-                            // Sanitize HTML by removing whitespace between tags
-                            // This prevents ProseMirror/Tiptap from wrapping whitespace text nodes into dummy <td> or <tr> elements
                             text = text.replace(/>\s+</g, '><');
                           }
                           onApplyAction(text);
@@ -569,7 +670,7 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       {/* Input Area */}
       <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)" }}>
         
-        {/* Deep Research button — always visible in input area */}
+        {/* Action buttons — Deep Research & Search Web */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
           <button
             onClick={() => handleDeepResearch()}
@@ -586,6 +687,22 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
             }}
           >
             <BookOpen size={11} /> Deep Research
+          </button>
+          <button
+            onClick={() => handleWebSearch()}
+            disabled={isLoading || isProcessingAction || isDeepResearching || !input.trim()}
+            title="Search the web or scrape a URL"
+            style={{
+              background: input.trim() ? 'rgba(20, 184, 166, 0.1)' : 'rgba(148, 163, 184, 0.05)',
+              color: input.trim() ? '#2dd4bf' : 'var(--text-secondary)',
+              border: `1px solid ${input.trim() ? 'rgba(20, 184, 166, 0.3)' : 'var(--border-color)'}`,
+              padding: '5px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: 600,
+              cursor: (isLoading || isProcessingAction || isDeepResearching || !input.trim()) ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '5px',
+              transition: 'all 0.2s ease', whiteSpace: 'nowrap'
+            }}
+          >
+            <Search size={11} /> Search Web
           </button>
         </div>
 
