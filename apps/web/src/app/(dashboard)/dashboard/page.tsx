@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles, ChevronDown, Upload, Table, Presentation, File } from "lucide-react";
+import { Loader2, Plus, FileText, Settings, Trash2, Bot, Folder, ChevronRight, Sparkles, ChevronDown, Upload, Table, Presentation, File, Copy, Check } from "lucide-react";
+import { toast } from 'react-hot-toast';
 
 export default function DashboardPage() {
   const [workspaces, setWorkspaces] = useState<any[]>([]);
@@ -13,6 +14,17 @@ export default function DashboardPage() {
   
   const [loading, setLoading] = useState(true);
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [generatingDemo, setGeneratingDemo] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (id: string, message: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success(message);
+    setTimeout(() => {
+      setCopiedId(null);
+    }, 2000);
+  };
   const [creating, setCreating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [docToDelete, setDocToDelete] = useState<string | null>(null);
@@ -349,6 +361,19 @@ export default function DashboardPage() {
               <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
                 Manage your documents in {activeWorkspace.name}.
               </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 500 }}>Workspace ID:</span>
+                <code style={{ fontSize: "0.85rem", color: "var(--text-primary)", background: "rgba(255,255,255,0.05)", padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--border-color)", fontFamily: "monospace" }}>
+                  {activeWorkspace.id}
+                </code>
+                <button 
+                  onClick={() => handleCopy(activeWorkspace.id, 'Workspace ID copied')}
+                  style={{ background: "transparent", border: "none", color: copiedId === activeWorkspace.id ? "#10b981" : "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", transition: "color 0.2s" }}
+                  title="Copy Workspace ID"
+                >
+                  {copiedId === activeWorkspace.id ? <Check size={16} /> : <Copy size={16} />}
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative" }}>
@@ -372,6 +397,25 @@ export default function DashboardPage() {
               >
                 Share
               </button>
+
+              <Link
+                href={`/workspace/${activeWorkspaceId}/settings`}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  color: "var(--text-primary)",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}
+              >
+                <Settings size={16} />
+                Settings
+              </Link>
               
               <form onSubmit={handleSearch} style={{ display: "flex", alignItems: "center" }}>
                 <input 
@@ -572,9 +616,25 @@ export default function DashboardPage() {
                         </div>
                         <h3 style={{ fontSize: "0.95rem", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{doc.name}</h3>
                       </div>
-                      <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", paddingLeft: "24px" }}>
-                        {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
-                      </p>
+                      <div style={{ paddingLeft: "24px" }}>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                          {new Date(doc.updatedAt || doc.createdAt).toLocaleDateString()}
+                        </p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontFamily: "monospace", opacity: 0.8 }}>ID: {doc.id.substring(0,8)}...</span>
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCopy(doc.id, `${isFolder ? 'Folder' : 'Document'} ID copied`);
+                            }}
+                            style={{ background: "transparent", border: "none", color: copiedId === doc.id ? "#10b981" : "var(--text-secondary)", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center", transition: "color 0.2s" }}
+                            title="Copy full ID"
+                          >
+                            {copiedId === doc.id ? <Check size={12} /> : <Copy size={12} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </>
                 );

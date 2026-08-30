@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { KeyRound, Plus, Trash2, Copy, AlertTriangle } from 'lucide-react';
+import { KeyRound, Plus, Trash2, Copy, AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface ApiKey {
   id: string;
@@ -19,6 +19,7 @@ export default function WorkspaceSettingsPage() {
   const [newKeyName, setNewKeyName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchApiKeys();
@@ -80,12 +81,21 @@ export default function WorkspaceSettingsPage() {
     }
   };
 
-  const handleRevokeKey = async (id: string) => {
-    if (!confirm('Are you sure you want to revoke this API Key? Any application using it will stop working immediately.')) return;
+  const [keyToRevoke, setKeyToRevoke] = useState<string | null>(null);
+  const [revokeStatus, setRevokeStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [isRevoking, setIsRevoking] = useState(false);
 
+  const handleRevokeKey = (id: string) => {
+    setKeyToRevoke(id);
+  };
+
+  const confirmRevokeKey = async () => {
+    if (!keyToRevoke) return;
+
+    setIsRevoking(true);
     try {
       const token = localStorage.getItem('vexius_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api-keys/${id}/workspace/${workspaceId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api-keys/${keyToRevoke}/workspace/${workspaceId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -97,10 +107,13 @@ export default function WorkspaceSettingsPage() {
         throw new Error(errData.message || 'Failed to revoke key');
       }
 
-      toast.success('API Key revoked');
+      setRevokeStatus({ type: 'success', message: 'API Key has been revoked successfully and is no longer active.' });
       fetchApiKeys();
     } catch (err: any) {
-      toast.error(err.message);
+      setRevokeStatus({ type: 'error', message: err.message });
+    } finally {
+      setIsRevoking(false);
+      setKeyToRevoke(null);
     }
   };
 
@@ -109,105 +122,217 @@ export default function WorkspaceSettingsPage() {
     toast.success('Copied to clipboard');
   };
 
+  const toggleKeyVisibility = (id: string) => {
+    setVisibleKeys(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "32px", display: "flex", flexDirection: "column", gap: "32px" }}>
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Workspace Settings</h1>
-        <p className="text-gray-400 mt-2">Manage your workspace configuration and integrations.</p>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em", margin: 0 }}>Workspace Settings</h1>
+        <p style={{ color: "var(--text-secondary)", marginTop: "8px", fontSize: "0.95rem" }}>
+          Manage your workspace configuration and integrations.
+        </p>
       </div>
 
-      <div className="bg-[#1C1C1F] border border-[#333] rounded-xl p-6 shadow-xl space-y-6">
+      <div style={{ 
+        background: "var(--bg-secondary)", 
+        border: "1px solid var(--border-color)", 
+        borderRadius: "12px", 
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "24px"
+      }}>
         <div>
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-            <KeyRound className="w-5 h-5 text-indigo-400" />
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+            <div style={{ padding: "6px", background: "rgba(168, 85, 247, 0.1)", borderRadius: "6px", color: "#a855f7" }}>
+              <KeyRound size={18} />
+            </div>
             API Keys
           </h2>
-          <p className="text-sm text-gray-400 mt-1">
+          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "8px" }}>
             API keys allow external applications (like Claude Desktop or Cursor) to securely access this workspace.
           </p>
         </div>
 
         {/* Generate New Key Form */}
-        <form onSubmit={handleGenerateKey} className="flex gap-3">
+        <form onSubmit={handleGenerateKey} style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <input
             type="text"
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
             placeholder="Key Name (e.g. Claude Desktop Mac)"
-            className="flex-1 bg-[#2C2C30] border border-[#444] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              background: "var(--bg-primary)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "8px",
+              color: "var(--text-primary)",
+              fontSize: "0.9rem",
+              outline: "none"
+            }}
             required
             disabled={isGenerating}
           />
           <button
             type="submit"
             disabled={isGenerating || !newKeyName.trim()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+            style={{
+              padding: "10px 20px",
+              background: "#a855f7",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: 500,
+              fontSize: "0.9rem",
+              cursor: (isGenerating || !newKeyName.trim()) ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              opacity: (isGenerating || !newKeyName.trim()) ? 0.6 : 1,
+              transition: "opacity 0.2s"
+            }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus size={16} />
             {isGenerating ? 'Generating...' : 'Generate Key'}
           </button>
         </form>
 
         {/* Newly Generated Key Alert */}
         {generatedKey && (
-          <div className="bg-emerald-950/30 border border-emerald-900/50 rounded-lg p-4 space-y-3">
-            <div className="flex gap-2 text-emerald-400">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium">Please copy this API key and save it somewhere safe.</p>
-                <p className="opacity-90 mt-0.5">For security reasons, you won't be able to see it again after you close this page.</p>
+          <div style={{
+            background: "rgba(16, 185, 129, 0.1)",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+            borderRadius: "8px",
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
+          }}>
+            <div style={{ display: "flex", gap: "12px", color: "#10b981" }}>
+              <AlertTriangle size={20} style={{ flexShrink: 0 }} />
+              <div>
+                <p style={{ fontWeight: 600, margin: 0, fontSize: "0.9rem" }}>Please copy this API key and save it somewhere safe.</p>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", opacity: 0.9 }}>For security reasons, you won't be able to see it again after you close this page.</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 bg-black/50 p-2 rounded-lg border border-emerald-900/30">
-              <code className="flex-1 text-emerald-300 text-sm font-mono break-all">{generatedKey}</code>
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px", 
+              background: "rgba(0,0,0,0.2)", 
+              padding: "8px 12px", 
+              borderRadius: "6px",
+              border: "1px solid rgba(16, 185, 129, 0.15)"
+            }}>
+              <code style={{ flex: 1, color: "#10b981", fontSize: "0.85rem", fontFamily: "monospace", wordBreak: "break-all" }}>
+                {generatedKey}
+              </code>
               <button
                 type="button"
                 onClick={() => copyToClipboard(generatedKey)}
-                className="p-2 bg-[#2C2C30] hover:bg-[#3C3C40] rounded text-gray-300 transition"
+                style={{
+                  padding: "6px",
+                  background: "var(--bg-primary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "4px",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
                 title="Copy to clipboard"
               >
-                <Copy className="w-4 h-4" />
+                <Copy size={14} />
               </button>
             </div>
           </div>
         )}
 
         {/* Key List */}
-        <div className="mt-8">
+        <div style={{ marginTop: "16px" }}>
           {loading ? (
-            <div className="text-center py-8 text-sm text-gray-500 animate-pulse">Loading API keys...</div>
+            <div style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+              Loading API keys...
+            </div>
           ) : apiKeys.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-[#444] rounded-xl text-gray-500 text-sm">
+            <div style={{ 
+              textAlign: "center", 
+              padding: "48px 24px", 
+              border: "1px dashed var(--border-color)", 
+              borderRadius: "8px", 
+              color: "var(--text-secondary)",
+              fontSize: "0.9rem"
+            }}>
               No API keys generated yet.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-300">
-                <thead className="text-xs text-gray-500 uppercase bg-[#2C2C30]/50 rounded-t-lg">
-                  <tr>
-                    <th className="px-4 py-3 font-medium rounded-tl-lg">Name</th>
-                    <th className="px-4 py-3 font-medium">Key Prefix</th>
-                    <th className="px-4 py-3 font-medium">Created On</th>
-                    <th className="px-4 py-3 font-medium text-right rounded-tr-lg">Action</th>
+            <div style={{ overflowX: "auto", border: "1px solid var(--border-color)", borderRadius: "8px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-primary)", borderBottom: "1px solid var(--border-color)" }}>
+                    <th style={{ padding: "12px 16px", fontWeight: 500, color: "var(--text-secondary)" }}>Name</th>
+                    <th style={{ padding: "12px 16px", fontWeight: 500, color: "var(--text-secondary)" }}>Key Prefix</th>
+                    <th style={{ padding: "12px 16px", fontWeight: 500, color: "var(--text-secondary)" }}>Created On</th>
+                    <th style={{ padding: "12px 16px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "right" }}>Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#333]">
-                  {apiKeys.map(key => (
-                    <tr key={key.id} className="hover:bg-[#2C2C30]/30 transition">
-                      <td className="px-4 py-3 font-medium text-white">{key.name}</td>
-                      <td className="px-4 py-3 font-mono text-xs opacity-70">
-                        {key.key.substring(0, 15)}...
+                <tbody>
+                  {apiKeys.map((key, i) => (
+                    <tr key={key.id} style={{ 
+                      borderBottom: i === apiKeys.length - 1 ? "none" : "1px solid var(--border-color)",
+                      background: "var(--bg-secondary)"
+                    }}>
+                      <td style={{ padding: "12px 16px", fontWeight: 500, color: "var(--text-primary)" }}>{key.name}</td>
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span>
+                            {visibleKeys[key.id] ? key.key : `vex_live_${'*'.repeat(Math.max(key.key.length - 9, 20))}`}
+                          </span>
+                          <button
+                            onClick={() => toggleKeyVisibility(key.id)}
+                            style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            title={visibleKeys[key.id] ? "Hide Key" : "Show Key"}
+                          >
+                            {visibleKeys[key.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          <button
+                            onClick={() => copyToClipboard(key.key)}
+                            style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            title="Copy Key"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
                       </td>
-                      <td className="px-4 py-3 opacity-70">
+                      <td style={{ padding: "12px 16px", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
                         {new Date(key.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
                         <button
                           onClick={() => handleRevokeKey(key.id)}
-                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-400/10 transition inline-flex"
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            padding: "6px",
+                            borderRadius: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"}
+                          onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
                           title="Revoke Key"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
@@ -218,6 +343,74 @@ export default function WorkspaceSettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Revoke Confirmation Modal */}
+      {keyToRevoke && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div style={{ background: "var(--bg-secondary)", padding: "24px", borderRadius: "12px", border: "1px solid var(--border-color)", width: "400px", maxWidth: "90%" }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>Revoke API Key</h3>
+            <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: "0 0 24px 0", lineHeight: 1.5 }}>
+              Are you sure you want to revoke this API Key? Any application using it will stop working immediately. This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button 
+                onClick={() => setKeyToRevoke(null)}
+                disabled={isRevoking}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--border-color)", background: "transparent", color: "var(--text-primary)", cursor: isRevoking ? "not-allowed" : "pointer", fontSize: "0.9rem", fontWeight: 500, opacity: isRevoking ? 0.5 : 1 }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmRevokeKey}
+                disabled={isRevoking}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "#ef4444", color: "#fff", cursor: isRevoking ? "not-allowed" : "pointer", fontSize: "0.9rem", fontWeight: 500, display: "flex", alignItems: "center", gap: "8px", opacity: isRevoking ? 0.7 : 1 }}
+              >
+                {isRevoking ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Revoking...
+                  </>
+                ) : (
+                  'Yes, Revoke'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Information Modal */}
+      {revokeStatus && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div style={{ background: "var(--bg-secondary)", padding: "24px", borderRadius: "12px", border: "1px solid var(--border-color)", width: "400px", maxWidth: "90%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+              {revokeStatus.type === 'success' ? (
+                <div style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10b981", padding: "8px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <AlertTriangle size={20} />
+                </div>
+              ) : (
+                <div style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", padding: "8px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <AlertTriangle size={20} />
+                </div>
+              )}
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+                {revokeStatus.type === 'success' ? 'Revoked Successfully' : 'Action Failed'}
+              </h3>
+            </div>
+            <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: "0 0 24px 0", lineHeight: 1.5 }}>
+              {revokeStatus.message}
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button 
+                onClick={() => setRevokeStatus(null)}
+                style={{ padding: "8px 24px", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--bg-primary)", color: "var(--text-primary)", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

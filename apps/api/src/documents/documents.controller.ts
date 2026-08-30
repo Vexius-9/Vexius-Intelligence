@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { DocumentsService } from './documents.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('documents')
@@ -12,7 +12,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Post('upload')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async uploadFile(@Req() req: FastifyRequest, @CurrentUser() user: any) {
     if (!(req as any).isMultipart()) {
       throw new BadRequestException('Request is not multipart');
@@ -23,9 +23,6 @@ export class DocumentsController {
       throw new BadRequestException('No file uploaded');
     }
 
-    // In @fastify/multipart, fields are extracted differently if not using attachFieldsToBody
-    // For simplicity, we can get workspaceId from a header or query, or from parts
-    // Let's assume workspaceId is passed as a query parameter for the file upload
     const workspaceId = (req.query as any).workspaceId;
     if (!workspaceId) {
       throw new BadRequestException('workspaceId query parameter is required');
@@ -45,7 +42,7 @@ export class DocumentsController {
   }
 
   @Post('create')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async createDocument(
     @Body('workspaceId') workspaceId: string,
     @Body('name') name: string,
@@ -60,7 +57,7 @@ export class DocumentsController {
   }
 
   @Get('workspace/:workspaceId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async getWorkspaceDocuments(
     @Param('workspaceId') workspaceId: string,
     @Query('parentId') parentId: string,
@@ -70,7 +67,7 @@ export class DocumentsController {
   }
 
   @Get(':id/download')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async getDownloadUrl(
     @Param('id') id: string,
     @CurrentUser() user: any
@@ -79,7 +76,7 @@ export class DocumentsController {
   }
 
   @Get(':id/json')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async getDocumentJson(
     @Param('id') id: string,
     @CurrentUser() user: any
@@ -88,20 +85,21 @@ export class DocumentsController {
   }
 
   @Post(':id/content')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async saveDocumentContent(
     @Param('id') id: string,
     @Body('content') content: string,
+    @Body('mode') mode: 'append' | 'replace',
     @CurrentUser() user: any
   ) {
     if (typeof content !== 'string') {
       throw new BadRequestException('Content must be a string');
     }
-    return this.documentsService.saveContent(id, user.id, content);
+    return this.documentsService.saveContent(id, user.id, content, mode || 'replace');
   }
 
   @Get(':id/editor-config')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async getEditorConfig(
     @Param('id') id: string,
     @CurrentUser() user: any
@@ -110,7 +108,7 @@ export class DocumentsController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async getDocument(
     @Param('id') id: string,
     @CurrentUser() user: any
@@ -119,7 +117,7 @@ export class DocumentsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async renameDocument(
     @Param('id') id: string,
     @Body('name') name: string,
@@ -132,7 +130,7 @@ export class DocumentsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HybridAuthGuard)
   async deleteDocument(
     @Param('id') id: string,
     @CurrentUser() user: any

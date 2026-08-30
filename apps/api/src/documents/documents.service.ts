@@ -323,7 +323,7 @@ export class DocumentsService {
     return result;
   }
 
-  async saveContent(documentId: string, userId: string, content: string) {
+  async saveContent(documentId: string, userId: string, content: string, mode: 'replace' | 'append' = 'replace') {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
     });
@@ -339,13 +339,57 @@ export class DocumentsService {
     }
 
     try {
+      let finalContent = content;
+
+      if (document.mimeType === 'application/vnd.vexius.document') {
+        if (mode === 'append') {
+          try {
+            const existingBlob = await this.storageClient.downloadFile('vexius-documents', document.storageKey);
+            const existingText = existingBlob.toString('utf-8');
+            let existingJson;
+            try {
+              existingJson = JSON.parse(existingText);
+            } catch (e) {
+              // Not JSON, append as text
+              finalContent = JSON.stringify({
+                type: "doc",
+                content: [
+                  { type: "paragraph", content: [{ type: "text", text: existingText }] },
+                  { type: "paragraph", content: [{ type: "text", text: content }] }
+                ]
+              });
+            }
+
+            if (existingJson && existingJson.type === 'doc') {
+              existingJson.content.push({
+                type: "paragraph",
+                content: [{ type: "text", text: content }]
+              });
+              finalContent = JSON.stringify(existingJson);
+            }
+          } catch (e) {
+            // File not found, create new
+            finalContent = JSON.stringify({
+              type: "doc",
+              content: [{ type: "paragraph", content: [{ type: "text", text: content }] }]
+            });
+          }
+        } else if (!content.trim().startsWith('{')) {
+          // Replace mode, but plain text
+          finalContent = JSON.stringify({
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: content }] }]
+          });
+        }
+      }
+
       let fileBuffer: Buffer;
-      if (content.startsWith('data:')) {
+      if (finalContent.startsWith('data:')) {
         // e.g. data:application/pdf;base64,JVBERi...
-        const base64Data = content.split(',')[1];
+        const base64Data = finalContent.split(',')[1];
         fileBuffer = Buffer.from(base64Data, 'base64');
       } else {
-        fileBuffer = Buffer.from(content, 'utf-8');
+        fileBuffer = Buffer.from(finalContent, 'utf-8');
       }
       
       // Store in place (overwrite) or increment version. For autosave, overwriting is better to avoid spamming versions.

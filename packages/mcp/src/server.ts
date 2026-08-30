@@ -250,7 +250,7 @@ async function handleTool(
         content: string;
         mode?: string;
       };
-      const data = await vexiusRequest('PATCH', `/documents/${documentId}`, {
+      const data = await vexiusRequest('POST', `/documents/${documentId}/content`, {
         content,
         mode,
       });
