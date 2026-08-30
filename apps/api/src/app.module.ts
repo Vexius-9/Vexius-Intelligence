@@ -13,6 +13,7 @@ import { AuditModule } from './audit/audit.module';
 import { BrowserModule } from './browser/browser.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { APP_GUARD } from '@nestjs/core';
     WorkerModule,
     AuditModule,
     BrowserModule,
+    ApiKeysModule,
   ],
   controllers: [AppController],
   providers: [
