@@ -1,8 +1,8 @@
-# @vexius/mcp
+# vexius-mcp
 
 **Official Vexius Intelligence MCP Server** — connect Claude Desktop, Cursor, Zed, and any MCP-compatible AI client directly to your Vexius workspace.
 
-[![npm version](https://badge.fury.io/js/%40vexius%2Fmcp.svg)](https://badge.fury.io/js/%40vexius%2Fmcp)
+[![npm version](https://badge.fury.io/js/vexius-mcp.svg)](https://badge.fury.io/js/vexius-mcp)
 
 ## Tools Available
 
@@ -19,7 +19,7 @@
 ## Installation
 
 ```bash
-npm install -g @vexius/mcp
+npm install -g vexius-mcp
 ```
 
 ## Setup
@@ -54,7 +54,7 @@ Add to `~/.cursor/mcp.json`:
   "mcpServers": {
     "vexius": {
       "command": "npx",
-      "args": ["-y", "@vexius/mcp"],
+      "args": ["-y", "vexius-mcp"],
       "env": {
         "VEXIUS_API_KEY": "vex_live_your_key_here"
       }
