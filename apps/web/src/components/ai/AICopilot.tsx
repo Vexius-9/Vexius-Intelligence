@@ -269,16 +269,11 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
       setDeepResearchSteps(prev => prev.map(s => ({ ...s, done: true })));
 
       setTimeout(() => {
-        // Build sources block to append at end of message content
-        const sourcesBlock = sources.length > 0
-          ? `\n\n---\n**Web Sources Used (${sources.length})**\n${sources.map((s, i) => `${i + 1}. [${s.title || s.url}](${s.url})`).join('\n')}`
-          : '';
-
         setDeepResearchSources(sources);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `**Deep Research Report**\n\n${data.result}${sourcesBlock}\n\n---\n*Report saved to your workspace as a document.*`
+          content: `**Deep Research Report**\n\n${data.result}`
         }]);
         setIsDeepResearching(false);
         setDeepResearchSteps([]);

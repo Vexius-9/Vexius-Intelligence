@@ -564,14 +564,15 @@ ${numberedSources.join('\n\n')}
 
     // Post-process deep-researcher: strip any AI-fabricated references section and append real ones
     if (agentType === 'deep-researcher' && scrapedSources.length > 0) {
-      // Remove any AI-generated References/Bibliography/Footnotes section at the end
-      markdownContent = markdownContent.replace(/\n+(?:#{1,4}\s*)?(?:References|Bibliography|Sources|Footnotes|Works Cited|Citations)[\s\S]*$/i, '');
+      // Only strip a heading-level References/Bibliography section at the very end
+      // Match: newlines + ## References (or ###, ####) + everything after it at the end of string
+      markdownContent = markdownContent.replace(/\n{2,}#{1,4}\s*(?:References|Bibliography|Footnotes|Works Cited|Citations)\s*\n[\s\S]*$/i, '');
       // Remove any [^n]: footnote definitions the AI might have added
       markdownContent = markdownContent.replace(/^\[\^\d+\]:.*$/gm, '');
       // Clean up trailing whitespace
       markdownContent = markdownContent.trimEnd();
 
-      // Append verified references
+      // Append verified references with real URLs
       const refsBlock = scrapedSources.map((s, i) =>
         `${i + 1}. [${s.title || 'Source'}](${s.url})${s.snippet ? ' — ' + s.snippet.slice(0, 120) : ''}`
       ).join('\n');
