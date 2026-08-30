@@ -1,7 +1,7 @@
 {
   "name": "vexius-mcp",
-  "version": "1.0.1",
-  "description": "Official Vexius Intelligence MCP (Model Context Protocol) Server — connect Claude, Cursor, and any MCP-compatible AI to your Vexius workspace.",
+  "version": "1.0.3",
+  "description": "Vexius Model Context Protocol (MCP) server for integration with Claude Desktop, and any MCP-compatible AI to your Vexius workspace.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {

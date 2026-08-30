@@ -581,13 +581,31 @@ ${numberedSources.join('\n\n')}
     }
 
     // Convert simple markdown to a ProseMirror JSON document
-    const paragraphs = markdownContent.split('\\n\\n').filter(p => p.trim());
+    const blocks = markdownContent.split('\\n\\n').filter(p => p.trim());
+    const contentNodes: any[] = [];
+    
+    for (const block of blocks) {
+      if (block.startsWith('# ')) {
+        contentNodes.push({ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: block.replace(/^#\\s+/, '') }] });
+      } else if (block.startsWith('## ')) {
+        contentNodes.push({ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: block.replace(/^##\\s+/, '') }] });
+      } else if (block.startsWith('### ')) {
+        contentNodes.push({ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: block.replace(/^###\\s+/, '') }] });
+      } else if (block.startsWith('- ') || block.startsWith('* ')) {
+        const items = block.split('\\n').filter(line => line.trim()).map(item => ({
+          type: 'listItem',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: item.replace(/^[-*]\\s+/, '') }] }]
+        }));
+        contentNodes.push({ type: 'bulletList', content: items });
+      } else {
+        // Just treat as paragraph. Inline bold/italic parsing is too complex for basic regex.
+        contentNodes.push({ type: 'paragraph', content: [{ type: 'text', text: block }] });
+      }
+    }
+
     const docJson = {
       type: "doc",
-      content: paragraphs.map(text => ({
-        type: "paragraph",
-        content: [{ type: "text", text }]
-      }))
+      content: contentNodes
     };
 
     const buffer = Buffer.from(JSON.stringify(docJson), 'utf-8');
