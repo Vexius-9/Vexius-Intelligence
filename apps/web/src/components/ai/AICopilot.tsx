@@ -333,9 +333,9 @@ export function AICopilot({ documentContext, getCurrentSelection, getFullText, o
         content = `**Search Results for "${query}"**\n\n` +
           parsed.map((r: any, i: number) => `**${i + 1}. [${r.title}](${r.link})**\n${r.snippet}`).join('\n\n');
       } else if (parsed && parsed.url) {
-        // URL scrape result
+        // URL scrape result — show full extracted content
         const badge = parsed.usedFallback ? ' ⚡ via Playwright' : '';
-        content = `**[${parsed.title || parsed.url}](${parsed.url})**${badge}\n\n${parsed.content?.slice(0, 1200) || '_No content extracted._'}${(parsed.content?.length || 0) > 1200 ? '\n\n_...content truncated_' : ''}`;
+        content = `**[${parsed.title || parsed.url}](${parsed.url})**${badge}\n\n${parsed.content || '_No content extracted._'}`;
       } else {
         content = `No results found for "${query}".`;
       }
